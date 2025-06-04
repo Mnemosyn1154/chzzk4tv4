@@ -6,7 +6,7 @@
     "main": "index.html",
     "title": "Chzzk4LGTV4",
     "icon": "assets/images/icon.png",
-    "miniicon": "assets/images/miniicon.png",
-    "largeIcon": "assets/images/largeicon.png",
+    "miniicon": "assets/images/icon.png",
+    "largeIcon": "assets/images/largeIcon.png",
     "uiRevision": 2
 } 
