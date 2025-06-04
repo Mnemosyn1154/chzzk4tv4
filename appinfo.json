@@ -1,0 +1,12 @@
+{
+    "id": "com.example.chzzk4lgtv4",
+    "version": "0.0.1",
+    "vendor": "MyCompany",
+    "type": "web",
+    "main": "index.html",
+    "title": "Chzzk4LGTV4",
+    "icon": "assets/images/icon.png",
+    "miniicon": "assets/images/miniicon.png",
+    "largeIcon": "assets/images/largeicon.png",
+    "uiRevision": 2
+} 
