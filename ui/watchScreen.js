@@ -35,10 +35,7 @@ function initAndPlayStream(broadcastData) {
     if (!chzzkPlayerElement || !broadcastData) {
         console.error("Player element or broadcast data missing.");
         showPlayerLoading(false);
-        if(playerStatusOverlayElement) {
-            playerStatusOverlayElement.textContent = '플레이어 오류';
-            playerStatusOverlayElement.style.display = 'block';
-        }
+        showPlayerError('플레이어 초기화 오류');
         return;
     }
 
@@ -65,56 +62,99 @@ function initAndPlayStream(broadcastData) {
                 hlsInstance.destroy(); 
             }
             hlsInstance = new Hls({
-                maxBufferLength: 45,    
-                maxMaxBufferLength: 900, 
-                autoStartLoad: true,    
-                startPosition: -1,      
-                debug: false // 디버그 로그 비활성화
+                maxBufferLength: 30,        // 버퍼 길이 줄임 (더 반응성 있는 스트리밍)
+                maxMaxBufferLength: 600,    // 최대 버퍼 길이 줄임
+                maxBufferSize: 60 * 1000 * 1000, // 60MB 버퍼 크기 제한
+                maxBufferHole: 0.5,         // 버퍼 홀 허용치
+                lowLatencyMode: true,       // 저지연 모드 활성화
+                backBufferLength: 90,       // 백버퍼 길이
+                autoStartLoad: true,
+                startPosition: -1,
+                debug: false,
+                enableWorker: true,         // Web Worker 사용
+                enableSoftwareAES: true,    // 소프트웨어 AES 활성화
+                fragLoadingTimeOut: 20000,  // 프래그먼트 로딩 타임아웃 20초
+                manifestLoadingTimeOut: 10000, // 매니페스트 로딩 타임아웃 10초
+                levelLoadingTimeOut: 10000  // 레벨 로딩 타임아웃 10초
             });
             hlsInstance.loadSource(streamUrl);
             hlsInstance.attachMedia(chzzkPlayerElement);
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log("HLS.js: Manifest parsed, attempting to play.");
+                showPlayerLoading(true, '재생 준비 중...');
                 chzzkPlayerElement.play().then(function() {
                     console.log("Video playback started via HLS.js.");
                     showPlayerLoading(false);
                 }).catch(function(error) {
                     console.error("Error playing video with HLS.js:", error);
                     showPlayerLoading(false);
-                    if(playerStatusOverlayElement) {
-                        playerStatusOverlayElement.textContent = 'HLS.js 재생 오류';
-                        playerStatusOverlayElement.style.display = 'block';
-                    }
+                    showPlayerError('스트림 재생을 시작할 수 없습니다');
                 });
             });
+            
+            // 추가 이벤트 리스너들 (필요시에만 로그)
+            hlsInstance.on(Hls.Events.FRAG_LOADING, function() {
+                // 일반적인 프래그먼트 로딩은 로그 생략
+                // console.log("HLS.js: Loading fragment...");
+            });
+            
+            hlsInstance.on(Hls.Events.FRAG_LOADED, function() {
+                // 일반적인 프래그먼트 로딩 성공은 로그 생략
+                // console.log("HLS.js: Fragment loaded successfully");
+            });
+            
+            hlsInstance.on(Hls.Events.BUFFER_APPENDED, function() {
+                // 버퍼가 추가되면 로딩을 숨김
+                if (chzzkPlayerElement && !chzzkPlayerElement.paused) {
+                    showPlayerLoading(false);
+                }
+            });
             hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-                console.error('HLS.js Error:', event, data); 
+                console.error('HLS.js Error:', data);
+                
                 if (data.fatal) {
                     switch(data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error("HLS.js: fatal network error encountered, trying to recover");
-                            if(hlsInstance) hlsInstance.startLoad(); 
+                            console.log("HLS.js: 네트워크 오류 - 재시도 중...");
+                            showPlayerError('네트워크 오류 - 재연결 중...');
+                            setTimeout(function() {
+                                if(hlsInstance) {
+                                    hlsInstance.startLoad();
+                                }
+                            }, 1000);
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error("HLS.js: fatal media error encountered, trying to recover");
-                            if(hlsInstance) hlsInstance.recoverMediaError();
+                            console.log("HLS.js: 미디어 오류 - 복구 시도 중...");
+                            showPlayerError('미디어 오류 - 복구 중...');
+                            setTimeout(function() {
+                                if(hlsInstance) {
+                                    hlsInstance.recoverMediaError();
+                                }
+                            }, 1000);
                             break;
                         default:
-                            console.error("HLS.js: an fatal error occurred, unrecoverable");
-                            if (hlsInstance) hlsInstance.destroy();
-                            hlsInstance = null;
+                            console.error("HLS.js: 복구 불가능한 치명적 오류");
+                            showPlayerError('재생 불가능 - 나중에 다시 시도해주세요');
+                            if (hlsInstance) {
+                                hlsInstance.destroy();
+                                hlsInstance = null;
+                            }
                             break;
                     }
-                }
-                if(playerStatusOverlayElement) {
-                    var errorMsg = 'HLS 재생 중 오류 발생';
-                    if (data.details) {
-                        errorMsg = 'HLS 오류: ' + data.details;
-                    } else if (data.type) {
-                        errorMsg = 'HLS 오류 타입: ' + data.type;
+                } else {
+                    // 치명적이지 않은 오류는 최소한의 로그만 남김
+                    if (data.details !== 'bufferStalledError' && 
+                        data.details !== 'bufferNudgeOnStall' && 
+                        data.details !== 'bufferSeekOverHole') {
+                        console.warn('HLS.js: 복구 가능한 오류:', data.details);
                     }
-                    playerStatusOverlayElement.textContent = errorMsg;
-                    playerStatusOverlayElement.style.display = 'block';
+                    
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        showPlayerLoading(true, '네트워크 재연결 중...');
+                        setTimeout(function() {
+                            showPlayerLoading(false);
+                        }, 2000);
+                    }
                 }
             });
         } else if (chzzkPlayerElement.canPlayType('application/vnd.apple.mpegurl') || chzzkPlayerElement.canPlayType('application/x-mpegURL')) {
@@ -126,30 +166,21 @@ function initAndPlayStream(broadcastData) {
                     showPlayerLoading(false);
                 }).catch(function(error) {
                     console.error("Error playing video (native HLS):", error);
-                     showPlayerLoading(false);
-                    if(playerStatusOverlayElement) {
-                        playerStatusOverlayElement.textContent = '네이티브 HLS 재생 오류';
-                        playerStatusOverlayElement.style.display = 'block';
-                    }
+                    showPlayerLoading(false);
+                    showPlayerError('네이티브 HLS 재생 오류');
                 });
             });
              chzzkPlayerElement.load(); 
         } else {
             console.error("HLS.js is not supported and native HLS playback also seems unsupported.");
             showPlayerLoading(false);
-            if(playerStatusOverlayElement) {
-                playerStatusOverlayElement.textContent = 'HLS 재생 불가';
-                playerStatusOverlayElement.style.display = 'block';
-            }
+            showPlayerError('이 기기에서는 HLS 재생이 지원되지 않습니다');
             return; 
         }
     } else {
         console.error("No stream URL found for playback.");
         showPlayerLoading(false);
-        if(playerStatusOverlayElement) {
-            playerStatusOverlayElement.textContent = '방송 URL 없음';
-            playerStatusOverlayElement.style.display = 'block';
-        }
+        showPlayerError('방송 스트림을 찾을 수 없습니다');
     }
 }
 
@@ -165,8 +196,10 @@ function stopPlayer() {
         chzzkPlayerElement.load(); 
         console.log("Video playback stopped and player reset.");
     }
-    showPlayerLoading(false); 
-    if (playerStatusOverlayElement) playerStatusOverlayElement.style.display = 'none';
+    showPlayerLoading(false);
+    if (playerStatusOverlayElement) {
+        playerStatusOverlayElement.style.display = 'none';
+    }
 }
 
 // DOMContentLoaded 시점에 주요 요소들 초기화
@@ -197,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         chzzkPlayerElement.addEventListener('waiting', function() {
             console.log("Player event: waiting");
-            showPlayerLoading(true);
+            showPlayerLoading(true, '버퍼링 중...');
         });
         chzzkPlayerElement.addEventListener('pause', function() {
             console.log("Player event: pause");
@@ -209,10 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chzzkPlayerElement.addEventListener('error', function(e) {
             console.error("Player event: error", e);
             showPlayerLoading(false);
-            if (playerStatusOverlayElement) {
-                playerStatusOverlayElement.textContent = '비디오 재생 오류';
-                playerStatusOverlayElement.style.display = 'block';
-            }
+            showPlayerError('비디오 재생 오류가 발생했습니다');
         });
     }
 });
@@ -237,16 +267,38 @@ function populateWatchInfo(data) {
     }
 
     try {
+        // 방송 제목
         if (watchInfoPanelElements.title) {
             var title = data.liveTitle || (data.channel && data.channel.channelName) || "제목 없음";
             watchInfoPanelElements.title.textContent = title;
         }
 
+        // 스트리머 이름
         if (watchInfoPanelElements.streamerName) {
             var streamerName = (data.channel && data.channel.channelName) || data.channelName || "스트리머 정보 없음";
             watchInfoPanelElements.streamerName.textContent = streamerName;
         }
 
+        // 채널 썸네일
+        if (watchInfoPanelElements.thumbnail) {
+            var thumbnailUrl = null;
+            if (data.channel && data.channel.channelImageUrl) {
+                thumbnailUrl = data.channel.channelImageUrl;
+            } else if (data.channelImageUrl) {
+                thumbnailUrl = data.channelImageUrl;
+            }
+            
+            if (thumbnailUrl) {
+                watchInfoPanelElements.thumbnail.src = thumbnailUrl;
+                watchInfoPanelElements.thumbnail.style.display = 'block';
+            } else {
+                watchInfoPanelElements.thumbnail.style.display = 'none';
+            }
+        }
+
+        // 카테고리와 설명은 제거됨
+
+        // 시청자 수와 시작 시간
         if (watchInfoPanelElements.viewerCount) {
             var viewerCount = data.concurrentUserCount || (data.channel && data.channel.followerCount) || 0;
             var startTime = data.openDate || data.liveOpenDate || null;
@@ -289,6 +341,7 @@ function hideInfoPopup() {
 }
 
 function showWatchScreen(broadcastData) {
+    var startTime = Date.now(); // 성능 측정 시작
     console.log("Showing watch screen with data:", broadcastData);
     
     if (!watchSectionElement) {
@@ -296,19 +349,29 @@ function showWatchScreen(broadcastData) {
         return;
     }
 
+    // UI 변경을 먼저 수행 (즉시 반응)
     watchSectionElement.style.display = 'flex';
     
     var searchSection = document.getElementById('search-section');
     if (searchSection) searchSection.style.display = 'none';
     
+    // 정보 표시 (빠른 표시)
     populateWatchInfo(broadcastData);
     
-    showPlayerLoading(true);
-    initAndPlayStream(broadcastData);
+    // 플레이어 로딩 표시
+    showPlayerLoading(true, '방송 연결 중...');
     
+    // 스트림 초기화 (비동기)
+    setTimeout(function() {
+        initAndPlayStream(broadcastData);
+        var loadTime = Date.now() - startTime;
+        console.log("Watch screen loading took: " + loadTime + "ms");
+    }, 100); // 100ms 지연으로 UI 응답성 개선
+    
+    // 정보 팝업 표시
     setTimeout(function() {
         showInfoPopup();
-    }, 500);
+    }, 200); // 더 빠른 표시
 }
 
 function hideWatchScreen() {
@@ -325,15 +388,30 @@ function hideWatchScreen() {
     if (searchSection) searchSection.style.display = 'block';
 }
 
-function showPlayerLoading(isLoading) {
+function showPlayerLoading(isLoading, message) {
     if (!playerStatusOverlayElement) return;
     
     if (isLoading) {
-        playerStatusOverlayElement.textContent = '로딩 중...';
+        var loadingMessage = message || '스트림 연결 중...';
+        playerStatusOverlayElement.textContent = loadingMessage;
         playerStatusOverlayElement.style.display = 'block';
     } else {
         playerStatusOverlayElement.style.display = 'none';
     }
+}
+
+function showPlayerError(errorMessage) {
+    if (!playerStatusOverlayElement) return;
+    
+    playerStatusOverlayElement.textContent = errorMessage || '재생 오류';
+    playerStatusOverlayElement.style.display = 'block';
+    
+    // 5초 후 자동으로 숨김
+    setTimeout(function() {
+        if (playerStatusOverlayElement.style.display === 'block') {
+            playerStatusOverlayElement.style.display = 'none';
+        }
+    }, 5000);
 }
 
 // WebOS 비디오 플레이어 연동 부분은 여기에 추가될 예정

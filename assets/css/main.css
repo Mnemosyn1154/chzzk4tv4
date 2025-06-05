@@ -291,7 +291,7 @@ h2 {
 
 /* Watch Section Styles */
 #watch-section {
-    /* display: flex; 이미 설정됨 */
+    display: block; /* 기본 블록 컨테이너 */
     position: fixed; /* 화면 전체를 덮도록 fixed 포지션 사용 */
     top: 0;
     left: 0;
@@ -327,22 +327,35 @@ h2 {
     transform: translateY(100%); /* 초기에는 화면 아래로 숨김 */
     width: 100%;  /* 전체 너비 사용 */
     max-width: 100%; /* 최대 너비 제한 해제 */
-    padding: 0.8rem 2rem; /* 상하 패딩을 줄여서 높이 축소 */
+    padding: 2rem 2rem; /* 패딩을 늘려서 하단 바를 20% 더 두껍게 */
     background-color: rgba(0, 0, 0, 0.75); 
     color: var(--text-color); 
     border-top-left-radius: 0.8rem; /* 상단 모서리만 약간 둥글게 */
     border-top-right-radius: 0.8rem;
-    /* box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.3); 그림자 효과는 유지하거나 제거 */
     
-    display: flex; 
-    flex-direction: column; 
-    align-items: flex-start; /* 내부 아이템들 왼쪽 정렬 */
-    gap: 0.1rem; /* 내부 아이템 간 간격을 더 줄임 */
+    display: flex !important; /* Flex 레이아웃으로 단순화 */
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
     
     opacity: 0;
     visibility: hidden; 
     transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s linear 0.5s;
     z-index: 10; 
+}
+
+/* 좌측 썸네일 섹션 */
+.watch-info-thumbnail {
+    flex: 0 0 auto;
+}
+
+/* 메인 정보 섹션 - 전체 공간 사용 */
+.watch-info-center {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    flex: 1;
 }
 
 #watch-info-panel.visible {
@@ -354,29 +367,33 @@ h2 {
 
 /* 정보 패널 내부 요소 스타일 조정 */
 #watch-channel-thumbnail {
-    display: none; /* 계속 숨김 */
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 0.15rem solid var(--border-color);
 }
 
 #watch-title {
     font-size: 1.8rem; 
     font-weight: bold;
-    margin-bottom: 0.2rem; 
+    margin: 0 0 0.1rem 0; 
     text-align: left; 
     color: var(--highlight-green); 
 }
 
 #watch-streamer-name {
     font-size: 1.5rem; 
-    /* font-weight: bold; 제목과 구분 위해 일반 두께로 변경 또는 유지 */
     color: var(--text-color);
     text-align: left; 
-    margin-bottom: 0.1rem;
+    margin: 0 0 0.1rem 0;
 }
 
 #watch-viewer-count {
     font-size: 1.4rem;
     color: var(--secondary-text-color); 
-    text-align: left; 
+    text-align: left;
+    margin: 0;
 }
 
 /* 시청자 수와 시작 시간 스타일 차별화 */
@@ -393,17 +410,23 @@ h2 {
     margin-left: 1rem; /* 시청자 수와 간격 */
 }
 
-#watch-category {
-    display: none; /* 계속 숨김 */
-}
-
-#watch-description-container {
-    display: none; /* 계속 숨김 */
-}
+/* 카테고리와 설명 관련 CSS 제거됨 */
 
 #player-status-overlay {
-    /* 기존 스타일 유지 */
-    z-index: 20; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: var(--text-color);
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-size: 1.6rem;
+    font-weight: bold;
+    z-index: 20;
+    border: 0.1rem solid var(--border-color);
+    min-width: 12rem;
+    text-align: center;
 }
 
 /* 포커스 가능한 요소들에 대한 스타일 (필요시 추가) */
