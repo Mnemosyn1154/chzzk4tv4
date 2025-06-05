@@ -104,6 +104,7 @@ function createLiveCard(stream, container) {
 
     card.appendChild(info);
     card.setAttribute('tabindex', '-1'); // 포커스 가능하도록 tabindex 추가
+    card.chzzkData = stream; // 카드 요소에 stream 데이터 직접 저장
     container.appendChild(card);
 }
 
@@ -178,9 +179,13 @@ function createSearchResultCard(item, container) {
 
     card.appendChild(info);
     card.setAttribute('tabindex', '-1'); // 포커스 가능하도록 tabindex 추가
+    card.chzzkData = item; // 카드 요소에 item (channel 정보 포함) 데이터 직접 저장
     container.appendChild(card);
 }
 
+// 전역 변수로 현재 선택된 라이브 데이터 및 이전 뷰 상태 저장
+let currentSelectedLiveData = null;
+let previousView = null; // 'live', 'search' 등으로 이전 뷰 상태 저장
 
 // API로부터 라이브 목록을 가져와 화면에 표시하는 함수
 async function fetchAndDisplayLives() {
@@ -200,10 +205,11 @@ async function fetchAndDisplayLives() {
                 createLiveCard(stream, liveStreamListContainer);
             });
             currentFocusIndex = CARDS_START_INDEX; // 라이브 목록의 첫번째 카드로 포커스 준비
-        } else {
+                            } else {
             liveStreamListContainer.innerHTML = '<p>현재 진행중인 라이브 방송이 없습니다.</p>';
             currentFocusIndex = SEARCH_INPUT_INDEX; // 방송 없을 시 검색창으로 포커스 준비
         }
+        previousView = 'live';
     } catch (error) {
         console.error('Error fetching lives:', error);
         liveStreamListContainer.innerHTML = '<p>방송 목록을 가져오는 중 오류가 발생했습니다.</p>';
@@ -230,10 +236,11 @@ async function fetchAndDisplaySearchResults(keyword) {
                 createSearchResultCard(item, searchResultsContainer);
             });
             currentFocusIndex = CARDS_START_INDEX; // 검색 성공 시 첫번째 카드로 포커스 준비
-        } else {
+                    } else {
             searchResultsContainer.innerHTML = '<p>검색 결과가 없습니다.</p>';
             currentFocusIndex = SEARCH_INPUT_INDEX; // 검색 결과 없을 시 검색창으로 포커스 준비
         }
+        previousView = 'search';
     } catch (error) {
         console.error('Error fetching search results:', error);
         searchResultsContainer.innerHTML = '<p>검색 결과를 가져오는 중 오류가 발생했습니다.</p>';
@@ -370,111 +377,198 @@ function setFocus(index) {
     }
 }
 
+// Helper function to determine the number of columns for card navigation
+function getColumnCount() {
+    const liveStreamContainer = document.getElementById('live-stream-list-container');
+    const searchResultsContainer = document.getElementById('search-results-container');
+    let activeContainer = null;
+
+    if (liveStreamContainer && liveStreamContainer.style.display !== 'none') {
+        activeContainer = liveStreamContainer;
+    } else if (searchResultsContainer && searchResultsContainer.style.display !== 'none') {
+        activeContainer = searchResultsContainer;
+    }
+
+    if (activeContainer) {
+        const gridComputedStyle = window.getComputedStyle(activeContainer);
+        const gridTemplateColumns = gridComputedStyle.getPropertyValue('grid-template-columns');
+        const columns = gridTemplateColumns.split(' ').filter(s => s.trim() !== '');
+        return columns.length > 0 ? columns.length : 1; 
+    }
+    // 기본값은 live-stream-list-container의 기본값인 4로 설정하거나, 상황에 따라 더 동적으로.
+    // 예를 들어, #search-results-container는 6컬럼이므로, 어떤 컨테이너가 활성인지에 따라 다를 수 있음.
+    // 여기서는 더 일반적인 기본값으로 4를 사용.
+    return 4; 
+}
+
+async function fetchFullLiveDetails(liveDataObject) {
+    if (!liveDataObject) {
+        console.error("fetchFullLiveDetails: liveDataObject is missing");
+        return null;
+    }
+
+    let channelId = null;
+    if (liveDataObject.channel && liveDataObject.channel.channelId) { 
+        channelId = liveDataObject.channel.channelId;
+    } else if (liveDataObject.channelId) { 
+        channelId = liveDataObject.channelId;
+    }
+
+    if (!channelId) {
+        console.error("fetchFullLiveDetails: channelId could not be extracted from liveDataObject", liveDataObject);
+        return null;
+    }
+
+    const apiUrl = `https://api.chzzk.naver.com/service/v2/channels/${channelId}/live-detail`;
+
+    try {
+        console.log(`Fetching full live details for channelId: ${channelId} from ${apiUrl}`);
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => "Failed to get error text");
+            if (response.status === 404) {
+                 console.error(`API call failed: 404 Not Found for channelId ${channelId} at ${apiUrl}. Response: ${errorText}`);
+            } else {
+                throw new Error(`API call failed with status: ${response.status}. Response: ${errorText}`);
+            }
+            return null;
+        }
+        const data = await response.json();
+        console.log("Full live details for channel fetched:", data);
+
+        if (data && data.content) {
+            return data.content;
+        } else {
+            console.error("No content in API response for full live details (channel)", data);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error fetching full live details for channelId ${channelId}:`, error);
+        return null;
+    }
+}
+
+// 핸들키다운 함수 등 나머지 부분
 function handleKeyDown(event) {
-    if (focusableElements.length === 0) return;
+    if (focusableElements.length === 0 && document.getElementById('watch-section')?.style.display !== 'flex') return;
 
     var newFocusIndex = currentFocusIndex;
-    const currentElement = focusableElements[currentFocusIndex];
+    const currentElement = focusableElements[currentFocusIndex]; 
+    const watchSection = document.getElementById('watch-section');
+
+    if (watchSection && watchSection.style.display === 'flex') {
+        if (event.keyCode === 461 || event.keyCode === 27) { 
+            console.log("Back key pressed from watch screen");
+            if (typeof hideWatchScreen === 'function') {
+                hideWatchScreen();
+                const searchSection = document.getElementById('search-section');
+                const liveStreamListContainer = document.getElementById('live-stream-list-container');
+                const searchResultsContainer = document.getElementById('search-results-container');
+                if(searchSection) searchSection.style.display = 'block'; 
+                if (previousView === 'search' && searchResultsContainer) {
+                    searchResultsContainer.style.display = 'grid';
+                    if(liveStreamListContainer) liveStreamListContainer.style.display = 'none';
+                } else if (liveStreamListContainer) {
+                    liveStreamListContainer.style.display = 'grid';
+                    if(searchResultsContainer) searchResultsContainer.style.display = 'none';
+                } else {
+                     fetchAndDisplayLives(); 
+                     return; 
+                }
+                initializeFocus(); 
+            } else {
+                console.error("hideWatchScreen function is not defined.");
+            }
+        }
+        event.preventDefault(); 
+        return; 
+    }
+    if (!currentElement) return;
 
     switch (event.keyCode) {
-        case 37: // 왼쪽 화살표
-            console.log("Left arrow pressed");
-            if (currentFocusIndex === SEARCH_BUTTON_INDEX) {
-                newFocusIndex = SEARCH_INPUT_INDEX;
-            } else if (currentFocusIndex >= CARDS_START_INDEX) {
-                const cardIndexInList = currentFocusIndex - CARDS_START_INDEX;
-                if (cardIndexInList % elementsPerRow !== 0) {
-                    newFocusIndex = currentFocusIndex - 1;
+        case 37: 
+        case 39: 
+        case 38: 
+        case 40: 
+            const oldFocusIndex = currentFocusIndex;
+            if (event.keyCode === 37) { 
+                if (currentElement.id === 'search-button') newFocusIndex = SEARCH_INPUT_INDEX;
+                else if (currentFocusIndex > CARDS_START_INDEX) newFocusIndex = currentFocusIndex - 1;
+            } else if (event.keyCode === 39) { 
+                if (currentElement.id === 'search-keyword-input') newFocusIndex = SEARCH_BUTTON_INDEX;
+                else if (currentFocusIndex < focusableElements.length - 1) newFocusIndex = currentFocusIndex + 1;
+            } else if (event.keyCode === 38) { 
+                if (currentFocusIndex >= CARDS_START_INDEX + getColumnCount()) {
+                    newFocusIndex = currentFocusIndex - getColumnCount();
+                } else if (currentFocusIndex >= CARDS_START_INDEX) { 
+                    newFocusIndex = SEARCH_INPUT_INDEX; 
                 }
-            }
-            break;
-        case 39: // 오른쪽 화살표
-            console.log("Right arrow pressed");
-            if (currentFocusIndex === SEARCH_INPUT_INDEX) {
-                newFocusIndex = SEARCH_BUTTON_INDEX;
-            } else if (currentFocusIndex >= CARDS_START_INDEX) {
-                const cardIndexInList = currentFocusIndex - CARDS_START_INDEX;
-                if ((cardIndexInList + 1) % elementsPerRow !== 0 && (currentFocusIndex + 1) < focusableElements.length) {
-                    newFocusIndex = currentFocusIndex + 1;
-                }
-            }
-            break;
-        case 38: // 위쪽 화살표
-            console.log("Up arrow pressed");
-            if (currentFocusIndex >= CARDS_START_INDEX) {
-                const cardIndexInList = currentFocusIndex - CARDS_START_INDEX;
-                if (cardIndexInList - elementsPerRow >= 0) {
-                    newFocusIndex = currentFocusIndex - elementsPerRow;
-                } else { // 첫번째 줄 카드에서 위로 갈 때
-                    newFocusIndex = SEARCH_INPUT_INDEX; // 검색창으로 이동
-                }
-            }
-            break;
-        case 40: // 아래쪽 화살표
-            console.log("Down arrow pressed");
-            if (currentFocusIndex === SEARCH_INPUT_INDEX || currentFocusIndex === SEARCH_BUTTON_INDEX) {
-                if (focusableElements.length > CARDS_START_INDEX) {
-                    newFocusIndex = CARDS_START_INDEX; // 첫번째 카드로 이동
-                }
-            } else if (currentFocusIndex >= CARDS_START_INDEX) {
-                if (currentFocusIndex + elementsPerRow < focusableElements.length) {
-                    newFocusIndex = currentFocusIndex + elementsPerRow;
+            } else if (event.keyCode === 40) { 
+                if (currentFocusIndex === SEARCH_INPUT_INDEX || currentFocusIndex === SEARCH_BUTTON_INDEX) {
+                    if (focusableElements.length > CARDS_START_INDEX) newFocusIndex = CARDS_START_INDEX;
+                } else if (currentFocusIndex + getColumnCount() < focusableElements.length) {
+                    newFocusIndex = currentFocusIndex + getColumnCount();
                 } else {
-                    // 더 아래로 갈 카드가 없을 때 마지막 행의 카드로 이동 시도 (부분적인 행)
-                    const cardIndexInList = currentFocusIndex - CARDS_START_INDEX;
-                    const currentRow = Math.floor(cardIndexInList / elementsPerRow);
-                    const numElementsInList = focusableElements.length - CARDS_START_INDEX;
-                    const lastRowFirstIndex = currentRow * elementsPerRow + CARDS_START_INDEX;
-                    const lastElementIndexInCurrentCol = Math.min(lastRowFirstIndex + (cardIndexInList % elementsPerRow), focusableElements.length - 1);
-                    if(currentFocusIndex + elementsPerRow >= focusableElements.length && currentFocusIndex < focusableElements.length -1 ){
-                        // newFocusIndex = focusableElements.length - 1; // 마지막 카드로 이동
-                         // 현재 열의 가장 마지막 카드로 이동하거나, 행의 마지막 카드로.
-                         // 여기서는 현재 열에 더이상 없으면 이동 안함. (혹은 마지막 요소로)
-                    }
+                    newFocusIndex = focusableElements.length -1; 
                 }
+            }
+            if (newFocusIndex >= focusableElements.length) newFocusIndex = focusableElements.length - 1;
+            if (newFocusIndex < 0) newFocusIndex = 0; 
+            if (newFocusIndex !== oldFocusIndex && focusableElements[newFocusIndex]) {
+                 setFocus(newFocusIndex);
             }
             break;
         case 13: // Enter/OK
             console.log("OK pressed on element: ", currentElement);
             if (currentElement && currentElement.id === 'search-button') {
-                currentElement.click(); // 검색 버튼 클릭 효과
+                currentElement.click(); 
             } else if (currentElement && currentElement.id === 'search-keyword-input'){
-                // 검색창에서 엔터 시 검색 실행 (이미 keypress 이벤트로 구현됨, 필요시 중복 호출 방지)
                 const searchButton = document.getElementById('search-button');
                 searchButton?.click();
-            } else if (currentElement && currentElement.classList.contains('live-card')) {
-                currentElement.style.transform = 'scale(1.05)';
-                setTimeout(() => {
-                    if (focusableElements[currentFocusIndex] === currentElement) { 
-                         currentElement.style.transform = 'scale(1)';
+            } else if (currentElement && currentElement.classList.contains('live-card') && currentElement.chzzkData) {
+                if (typeof showWatchScreen === 'function') {
+                    const basicLiveData = currentElement.chzzkData;
+                    currentSelectedLiveData = basicLiveData; 
+
+                    fetchFullLiveDetails(basicLiveData).then(fullDetails => {
+                        if (fullDetails) { 
+                            console.log("Successfully fetched live details for channel, showing watch screen with:", fullDetails);
+                            showWatchScreen(fullDetails);
+                        } else {
+                            console.error("Failed to fetch full live details for channel. Showing watch screen with basic data (playback will likely fail).");
+                            showWatchScreen(basicLiveData); 
+                        }
+                    }).catch(error => {
+                        console.error("Error in fetchFullLiveDetails (channel) promise chain:", error);
+                        showWatchScreen(basicLiveData); 
+                    });
+
+                    const liveContainer = document.getElementById('live-stream-list-container');
+                    if (liveContainer && liveContainer.style.display !== 'none') {
+                        previousView = 'live';
+                    } else {
+                        previousView = 'search';
                     }
-                }, 200);
+                } else {
+                    console.error("showWatchScreen function is not defined.");
+                }
+            } else {
+                 console.warn("OK pressed on unhandled element or no chzzkData:", currentElement);
             }
             break;
-        case 461: // WebOS Back key (Decimal 461)
-        case 27:  // Escape key (PC 테스트용으로 병행 처리)
-            console.log("Back key pressed");
+        case 461: 
+        case 27:  
+            console.log("Back key pressed from list/search view");
             const searchResultsContainer = document.getElementById('search-results-container');
-            const liveStreamListContainer = document.getElementById('live-stream-list-container');
             const searchInput = document.getElementById('search-keyword-input');
-
             if (searchResultsContainer && searchResultsContainer.style.display === 'grid' && searchResultsContainer.querySelectorAll('.live-card').length > 0) {
-                console.log("Back from search results to live list");
+                console.log("Back from search results to live list (main logic)");
                 searchResultsContainer.innerHTML = ''; 
                 searchResultsContainer.style.display = 'none';
-                if(liveStreamListContainer) {
-                    // liveStreamListContainer.style.display = 'grid'; // fetchAndDisplayLives에서 처리
-                    fetchAndDisplayLives(); // 라이브 목록 다시 로드 및 포커스 처리
-                } else {
-                     currentFocusIndex = SEARCH_INPUT_INDEX;
-                     initializeFocus(); 
-                }
+                fetchAndDisplayLives(); 
             } else if (document.activeElement === searchInput && searchInput.value !== ''){
-                console.log("Clear search input");
                 searchInput.value = '';
-                // 내용만 지우고 포커스는 검색창에 유지
             } else {
-                console.log("Exiting app via webOS.platformBack()");
                 if (typeof webOS !== 'undefined' && webOS.platformBack) {
                     webOS.platformBack();
                 } else {
@@ -483,14 +577,9 @@ function handleKeyDown(event) {
             }
             break;
         default:
-            return; // 다른 키는 무시
+            return; 
     }
-
-    if (newFocusIndex !== currentFocusIndex) {
-        setFocus(newFocusIndex);
-    }
-    
-    event.preventDefault(); // 기본 브라우저 동작 (예: 스크롤) 방지
+    event.preventDefault();
 }
 
 // fetchAndDisplayLives 함수가 완료된 후 (또는 검색 완료 후) 포커스 초기화
