@@ -77,6 +77,14 @@ function createLiveCard(stream, container) {
     card.appendChild(info);
     card.setAttribute('tabindex', '-1');
     card.chzzkData = stream; // 카드 요소에 stream 데이터 직접 저장
+    
+    // 클릭/터치 이벤트 추가
+    card.addEventListener('click', function() {
+        if (window.Navigation && window.Navigation.selectCard) {
+            window.Navigation.selectCard(card);
+        }
+    });
+    
     container.appendChild(card);
 }
 
@@ -160,6 +168,14 @@ function createSearchResultCard(item, container) {
     card.appendChild(info);
     card.setAttribute('tabindex', '-1');
     card.chzzkData = item;
+    
+    // 클릭/터치 이벤트 추가
+    card.addEventListener('click', function() {
+        if (window.Navigation && window.Navigation.selectCard) {
+            window.Navigation.selectCard(card);
+        }
+    });
+    
     container.appendChild(card);
 }
 

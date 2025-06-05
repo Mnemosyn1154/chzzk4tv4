@@ -171,54 +171,63 @@ function handleKeyDown(key) {
 }
 
 /**
- * OK 버튼 처리
+ * 카드 선택 처리 (OK 버튼 또는 클릭 시 공통)
+ * @param {HTMLElement} cardElement - 선택된 카드 요소
  */
-function handleOKButton() {
-    var currentElement = focusableElements[currentFocusIndex];
+function selectCard(cardElement) {
+    if (!cardElement || !cardElement.classList.contains('live-card')) {
+        return;
+    }
     
-    if (currentElement.classList && currentElement.classList.contains('live-card')) {
-        console.log('카드 선택됨:', currentElement.chzzkData);
-        
-        var cardData = currentElement.chzzkData;
-        
-        // 검색 결과 카드인지 확인
-        if (currentElement.classList.contains('search-result-card')) {
-            // 검색 결과 카드의 경우: 채널이 라이브 중인지 확인
-            if (cardData.channel && cardData.channel.openLive) {
-                // 라이브 중인 채널: 상세 정보를 가져와서 방송 화면으로 진입
-                ChzzkAPI.fetchFullLiveDetails(cardData).then(function(fullDetails) {
-                    if (fullDetails && typeof showWatchScreen === 'function') {
-                        console.log('검색 카드 -> 방송 화면 진입:', fullDetails);
-                        window.previousView = 'search';
-                        showWatchScreen(fullDetails);
-                    } else {
-                        console.log('라이브 상세 정보를 가져올 수 없습니다.');
-                    }
-                });
-            } else {
-                // 오프라인 채널: 알림 표시
-                console.log('오프라인 채널입니다:', cardData.channel.channelName);
-                alert(cardData.channel.channelName + '은(는) 현재 오프라인입니다.');
-            }
-        } else {
-            // 일반 라이브 카드의 경우: 기존 로직 사용
+    console.log('카드 선택됨:', cardElement.chzzkData);
+    
+    var cardData = cardElement.chzzkData;
+    
+    // 검색 결과 카드인지 확인
+    if (cardElement.classList.contains('search-result-card')) {
+        // 검색 결과 카드의 경우: 채널이 라이브 중인지 확인
+        if (cardData.channel && cardData.channel.openLive) {
+            // 라이브 중인 채널: 상세 정보를 가져와서 방송 화면으로 진입
             ChzzkAPI.fetchFullLiveDetails(cardData).then(function(fullDetails) {
                 if (fullDetails && typeof showWatchScreen === 'function') {
-                    console.log('라이브 카드 -> 방송 화면 진입:', fullDetails);
-                    window.previousView = 'live';
+                    console.log('검색 카드 -> 방송 화면 진입:', fullDetails);
+                    window.previousView = 'search';
                     showWatchScreen(fullDetails);
                 } else {
                     console.log('라이브 상세 정보를 가져올 수 없습니다.');
                 }
             });
+        } else {
+            // 오프라인 채널: 알림 표시
+            console.log('오프라인 채널입니다:', cardData.channel.channelName);
+            alert(cardData.channel.channelName + '은(는) 현재 오프라인입니다.');
         }
-        
-        // 카드 확대 효과
-        currentElement.style.transform = 'scale(1.05)';
-        setTimeout(function() {
-            currentElement.style.transform = 'scale(1)';
-        }, 200);
+    } else {
+        // 일반 라이브 카드의 경우: 기존 로직 사용
+        ChzzkAPI.fetchFullLiveDetails(cardData).then(function(fullDetails) {
+            if (fullDetails && typeof showWatchScreen === 'function') {
+                console.log('라이브 카드 -> 방송 화면 진입:', fullDetails);
+                window.previousView = 'live';
+                showWatchScreen(fullDetails);
+            } else {
+                console.log('라이브 상세 정보를 가져올 수 없습니다.');
+            }
+        });
     }
+    
+    // 카드 확대 효과
+    cardElement.style.transform = 'scale(1.05)';
+    setTimeout(function() {
+        cardElement.style.transform = 'scale(1)';
+    }, 200);
+}
+
+/**
+ * OK 버튼 처리
+ */
+function handleOKButton() {
+    var currentElement = focusableElements[currentFocusIndex];
+    selectCard(currentElement);
 }
 
 /**
@@ -257,6 +266,7 @@ window.Navigation = {
     handleKeyDown: handleKeyDown,
     handleOKButton: handleOKButton,
     handleBackButton: handleBackButton,
+    selectCard: selectCard,
     getCurrentFocusIndex: function() { return currentFocusIndex; },
     setCurrentFocusIndex: function(index) { currentFocusIndex = index; }
 }; 
