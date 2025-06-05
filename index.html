@@ -7,8 +7,19 @@
 </head>
 <body>
     <div id="app">
-        <!-- 앱 콘텐츠가 여기에 렌더링됩니다. -->
-        <h1>안녕하세요, Chzzk4LGTV4!</h1>
+        <div id="search-section">
+            <h1>스트리머 검색</h1>
+            <input type="text" id="search-keyword-input" placeholder="스트리머 닉네임 또는 채널명 입력...">
+            <button id="search-button">검색</button>
+            <div id="search-results-container">
+                <!-- 검색 결과가 여기에 표시됩니다. -->
+            </div>
+        </div>
+        <hr class="section-divider">
+        <h2>실시간 라이브</h2>
+        <div id="live-stream-list-container">
+            <!-- 라이브 방송 목록이 여기에 카드 형태로 렌더링됩니다. -->
+        </div>
     </div>
 
     <!-- Polyfills (필요한 경우) -->

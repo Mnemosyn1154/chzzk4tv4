@@ -1,1 +1,194 @@
+html {
+    font-size: 62.5%; /* 1rem = 10px on 1080p base (browser default 16px) */
+}
+
+:root {
+    --highlight-green: #61FF7E; /* 로고 녹색 (임시) */
+    --dark-bg: #000000;
+    --text-color: #FFFFFF;
+    --card-bg: #1A1A1A;
+    --secondary-text-color: #AAAAAA;
+    --border-color: #333333;
+}
+
 /* Main CSS for Chzzk4LGTV4 */ 
+
+body {
+    font-family: sans-serif;
+    margin: 0;
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    font-size: 1.6rem; /* Default body font size (16px equivalent) */
+}
+
+#app {
+    padding: 2rem 4rem; /* 20px 40px -> 2rem 4rem */
+}
+
+h1, h2 {
+    color: var(--highlight-green);
+    margin-top: 2rem;    /* 20px -> 2rem */
+    margin-bottom: 1rem; /* 10px -> 1rem */
+}
+
+h1 {
+    font-size: 2.8rem; /* Adjusted from 1.8em, assuming body 1.6rem, 1.8 * 1.6 = 2.88rem, rounded */
+    border-bottom: 0.2rem solid var(--highlight-green); /* 2px -> 0.2rem */
+    padding-bottom: 1rem; /* 10px -> 1rem */
+}
+
+h2 {
+    font-size: 2.4rem; /* Adjusted from 1.5em, assuming body 1.6rem, 1.5 * 1.6 = 2.4rem */
+}
+
+#search-section {
+    margin-bottom: 3rem; /* 30px -> 3rem */
+}
+
+#search-keyword-input {
+    padding: 1rem 1.5rem; /* 10px 15px -> 1rem 1.5rem */
+    font-size: 1.6rem;   /* Adjusted from 1em, to match body font-size */
+    border: 0.2rem solid var(--border-color); /* 2px -> 0.2rem */
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 0.5rem; /* 5px -> 0.5rem */
+    margin-right: 1rem;   /* 10px -> 1rem */
+    min-width: 30rem;    /* 300px -> 30rem */
+}
+
+#search-keyword-input:focus {
+    outline: none;
+    border-color: var(--highlight-green);
+}
+
+#search-button {
+    padding: 1rem 2rem;  /* 10px 20px -> 1rem 2rem */
+    font-size: 1.6rem; /* Adjusted from 1em */
+    background-color: var(--highlight-green);
+    color: var(--dark-bg);
+    border: none;
+    border-radius: 0.5rem; /* 5px -> 0.5rem */
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#search-button:hover {
+    opacity: 0.9;
+}
+
+.section-divider {
+    border: none;
+    height: 0.1rem; /* 1px -> 0.1rem */
+    background-color: var(--border-color);
+    margin: 3rem 0; /* 30px -> 3rem */
+}
+
+#search-results-container,
+#live-stream-list-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;        /* 20px -> 2rem */
+    margin-top: 2rem; /* 20px -> 2rem */
+}
+
+.live-card {
+    background-color: var(--card-bg);
+    border-radius: 0.8rem; /* 8px -> 0.8rem */
+    box-shadow: 0 0.2rem 0.4rem rgba(0,0,0,0.3); /* 0 2px 4px -> 0 0.2rem 0.4rem */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 0.1rem solid var(--border-color); /* 1px -> 0.1rem */
+}
+
+.live-card:hover {
+    border-color: var(--highlight-green);
+}
+
+.live-card-thumbnail {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-bottom: 0.1rem solid var(--border-color); /* 1px -> 0.1rem */
+}
+
+.live-card-info {
+    padding: 1.5rem; /* 15px -> 1.5rem */
+}
+
+.live-card-title {
+    font-size: 1.8rem; /* Adjusted from 1.1em, 1.1 * 1.6 = 1.76rem, rounded to 1.8rem */
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 0.8rem; /* 8px -> 0.8rem */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+}
+
+.live-card-channel,
+.live-card-viewers {
+    font-size: 1.4rem; /* Adjusted from 0.9em, 0.9 * 1.6 = 1.44rem, rounded to 1.4rem */
+    color: var(--secondary-text-color);
+    margin-bottom: 0.4rem; /* 4px -> 0.4rem */
+}
+
+/* Search Result Card Specific Styles */
+.live-card.live-now {
+    border-color: var(--highlight-green);
+}
+
+.verified-badge {
+    color: var(--highlight-green);
+    font-size: 1.4rem; /* Adjusted from 0.9em */
+    margin-left: 0.4rem; /* 4px -> 0.4rem */
+}
+
+.live-status-badge {
+    display: inline-block;
+    /* background-color: red; /* Removed explicit red, will use theme color */
+    padding: 0.2rem 0.8rem; /* 2px 8px -> 0.2rem 0.8rem */
+    border-radius: 0.4rem; /* 4px -> 0.4rem */
+    font-size: 1.3rem; /* Adjusted from 0.8em, 0.8 * 1.6 = 1.28rem, rounded to 1.3rem */
+    font-weight: bold;
+    margin-bottom: 0.8rem; /* 8px -> 0.8rem */
+}
+
+.live-status-badge.live {
+    background-color: var(--highlight-green);
+    color: var(--dark-bg);
+}
+
+.channel-description {
+    font-size: 1.3rem; /* Adjusted from 0.85em, 0.85 * 1.6 = 1.36rem, rounded to 1.3rem */
+    color: var(--secondary-text-color);
+    margin-top: 0.8rem; /* 8px -> 0.8rem */
+    white-space: normal;
+}
+
+.placeholder-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #2a2a2a;
+    color: var(--secondary-text-color);
+    font-size: 1.6rem; /* Adjusted from 1em */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-bottom: 0.1rem solid var(--border-color); /* 1px -> 0.1rem */
+}
+
+/* Media Query for 720p screens */
+@media (max-width: 1280px) {
+    html {
+        font-size: 41.67%; /* Approx 62.5% * (1280/1920) for 1rem = ~6.67px */
+    }
+    /* Potentially adjust grid columns for 720p if 4 columns are too many */
+    /* For example, switch to 3 columns on smaller screens */
+    /* #search-results-container,
+    #live-stream-list-container {
+        grid-template-columns: repeat(3, 1fr);
+    } */
+} 
