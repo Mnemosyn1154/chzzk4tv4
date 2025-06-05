@@ -7,6 +7,12 @@
     "title": "Chzzk4LGTV4",
     "icon": "assets/images/icon.png",
     "miniicon": "assets/images/icon.png",
-    "largeIcon": "assets/images/largeIcon.png",
-    "uiRevision": 2
+    "largeIcon": "assets/images/large-icon.png",
+    "uiRevision": 2,
+    "bgColor": "#000000",
+    "iconColor": "#61FF7E",
+    "disableBackHistoryAPI": true,
+    "accessibility": {
+        "supportsAudioGuidance": true
+    }
 } 
