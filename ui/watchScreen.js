@@ -6,6 +6,8 @@ var watchInfoPanelElements;
 var watchInfoPanelContainerElement;
 var chzzkPlayerElement;
 var playerStatusOverlayElement;
+var watchFavoriteButton;
+var currentWatchData = null; // 현재 시청 중인 방송 데이터
 var infoPopupTimer = null;
 var hlsInstance = null; // HLS.js 인스턴스를 저장할 변수
 
@@ -340,9 +342,122 @@ function hideInfoPopup() {
     }
 }
 
+/**
+ * 시청 화면 즐겨찾기 버튼 초기화
+ */
+function initializeWatchFavoriteButton() {
+    // 기존 버튼이 있다면 제거
+    var existingBtn = document.getElementById('watch-favorite-btn');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+    
+    // 제목 요소 찾기
+    var titleElement = document.getElementById('watch-title');
+    if (!titleElement) {
+        console.error('시청 화면 제목 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    // 새 별표 버튼 생성
+    watchFavoriteButton = document.createElement('button');
+    watchFavoriteButton.id = 'watch-favorite-btn';
+    watchFavoriteButton.className = 'watch-favorite-btn';
+    watchFavoriteButton.innerHTML = '★';
+    watchFavoriteButton.setAttribute('tabindex', '0');
+    
+    // 제목 요소에 버튼 추가
+    titleElement.appendChild(watchFavoriteButton);
+    
+    // 클릭 이벤트 등록
+    watchFavoriteButton.addEventListener('click', function() {
+        toggleWatchFavorite();
+    });
+    
+    console.log('시청 화면 즐겨찾기 버튼 초기화 완료');
+}
+
+/**
+ * 시청 화면에서 즐겨찾기 토글
+ */
+function toggleWatchFavorite() {
+    if (!currentWatchData || !window.FavoriteManager) {
+        console.error('즐겨찾기 토글 실패: 데이터 없음');
+        return;
+    }
+    
+    // 채널 ID 추출
+    var channelId = null;
+    if (currentWatchData.channel && currentWatchData.channel.channelId) {
+        channelId = currentWatchData.channel.channelId;
+    } else if (currentWatchData.channelId) {
+        channelId = currentWatchData.channelId;
+    }
+    
+    if (!channelId) {
+        console.error('채널 ID를 찾을 수 없습니다:', currentWatchData);
+        return;
+    }
+    
+    // 채널 데이터 준비
+    var channelData = {
+        channelId: channelId,
+        channelName: currentWatchData.channel ? currentWatchData.channel.channelName : currentWatchData.channelName,
+        channelImageUrl: currentWatchData.channel ? currentWatchData.channel.channelImageUrl : currentWatchData.channelImageUrl
+    };
+    
+    // 즐겨찾기 토글
+    var isNowFavorite = window.FavoriteManager.toggleFavorite(channelData);
+    updateWatchFavoriteButton(isNowFavorite);
+    
+    console.log(isNowFavorite ? '즐겨찾기에 추가됨:' : '즐겨찾기에서 제거됨:', channelData.channelName);
+}
+
+/**
+ * 시청 화면 즐겨찾기 버튼 외관 업데이트
+ * @param {boolean} isFavorite - 즐겨찾기 상태
+ */
+function updateWatchFavoriteButton(isFavorite) {
+    if (!watchFavoriteButton) return;
+    
+    if (isFavorite) {
+        watchFavoriteButton.classList.remove('inactive');
+        watchFavoriteButton.classList.add('active');
+    } else {
+        watchFavoriteButton.classList.remove('active');
+        watchFavoriteButton.classList.add('inactive');
+    }
+}
+
+/**
+ * 현재 방송의 즐겨찾기 상태 설정
+ * @param {Object} broadcastData - 방송 데이터
+ */
+function setWatchFavoriteState(broadcastData) {
+    if (!broadcastData || !window.FavoriteManager || !watchFavoriteButton) {
+        return;
+    }
+    
+    // 채널 ID 추출
+    var channelId = null;
+    if (broadcastData.channel && broadcastData.channel.channelId) {
+        channelId = broadcastData.channel.channelId;
+    } else if (broadcastData.channelId) {
+        channelId = broadcastData.channelId;
+    }
+    
+    if (channelId) {
+        var isFavorite = window.FavoriteManager.isFavorite(channelId);
+        updateWatchFavoriteButton(isFavorite);
+    }
+}
+
 function showWatchScreen(broadcastData) {
     var startTime = Date.now(); // 성능 측정 시작
     console.log("Showing watch screen with data:", broadcastData);
+    
+    // 현재 방송 데이터 저장
+    currentWatchData = broadcastData;
     
     if (!watchSectionElement) {
         console.error("Watch section element not found!");
@@ -357,6 +472,10 @@ function showWatchScreen(broadcastData) {
     
     // 정보 표시 (빠른 표시)
     populateWatchInfo(broadcastData);
+    
+    // 즐겨찾기 버튼 항상 초기화 및 상태 설정
+    initializeWatchFavoriteButton();
+    setWatchFavoriteState(broadcastData);
     
     // 플레이어 로딩 표시
     showPlayerLoading(true, '방송 연결 중...');
@@ -379,6 +498,9 @@ function hideWatchScreen() {
     
     stopPlayer();
     hideInfoPopup();
+    
+    // 현재 시청 데이터 초기화
+    currentWatchData = null;
     
     if (watchSectionElement) {
         watchSectionElement.style.display = 'none';

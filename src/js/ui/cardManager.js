@@ -1,6 +1,82 @@
 // 카드 생성 및 관리 모듈 (ES5 호환)
 
 /**
+ * 즐겨찾기 별표 요소 생성
+ * @param {Object} data - 방송/채널 데이터
+ * @returns {HTMLElement} 별표 요소
+ */
+function createFavoriteStar(data) {
+    var star = document.createElement('span');
+    star.className = 'favorite-star';
+    star.innerHTML = '★'; // 채워진 별 아이콘
+    
+    // 채널 ID 추출
+    var channelId = null;
+    if (data.channel && data.channel.channelId) {
+        channelId = data.channel.channelId;
+    } else if (data.channelId) {
+        channelId = data.channelId;
+    }
+    
+    // 즐겨찾기 상태에 따른 스타일 설정
+    if (channelId && window.FavoriteManager && window.FavoriteManager.isFavorite(channelId)) {
+        star.classList.add('active');
+    } else {
+        star.classList.add('inactive');
+    }
+    
+    // 별표 클릭 이벤트
+    star.addEventListener('click', function(event) {
+        event.stopPropagation(); // 카드 클릭 이벤트 방지
+        
+        if (!channelId) {
+            console.error('채널 ID를 찾을 수 없습니다:', data);
+            return;
+        }
+        
+        // 채널 데이터 준비
+        var channelData = {
+            channelId: channelId,
+            channelName: data.channel ? data.channel.channelName : (data.channelName || '알 수 없는 채널'),
+            channelImageUrl: data.channel ? data.channel.channelImageUrl : (data.channelImageUrl || null)
+        };
+        
+        // 즐겨찾기 토글
+        if (window.FavoriteManager) {
+            var isNowFavorite = window.FavoriteManager.toggleFavorite(channelData);
+            updateStarAppearance(star, isNowFavorite);
+            
+            // 성공 메시지 표시
+            console.log(isNowFavorite ? '즐겨찾기에 추가됨:' : '즐겨찾기에서 제거됨:', channelData.channelName);
+            
+            // 라이브 목록 자동 새로고침 (즐겨찾기 순서 반영)
+            setTimeout(function() {
+                if (window.SearchManager && window.SearchManager.refreshLiveList) {
+                    window.SearchManager.refreshLiveList();
+                }
+            }, 100); // 100ms 지연으로 부드러운 전환
+        }
+    });
+    
+    return star;
+}
+
+/**
+ * 별표 외관 업데이트
+ * @param {HTMLElement} star - 별표 요소
+ * @param {boolean} isFavorite - 즐겨찾기 상태
+ */
+function updateStarAppearance(star, isFavorite) {
+    if (isFavorite) {
+        star.classList.remove('inactive');
+        star.classList.add('active');
+    } else {
+        star.classList.remove('active');
+        star.classList.add('inactive');
+    }
+}
+
+/**
  * 라이브 방송 카드 생성
  * @param {Object} stream - 방송 데이터
  * @param {HTMLElement} container - 카드를 추가할 컨테이너
@@ -74,7 +150,12 @@ function createLiveCard(stream, container) {
         info.appendChild(liveBadge);
     }
 
+    // 즐겨찾기 별표를 info 영역에 추가
+    var favoriteStarElement = createFavoriteStar(stream);
+    info.appendChild(favoriteStarElement);
+
     card.appendChild(info);
+    
     card.setAttribute('tabindex', '-1');
     card.chzzkData = stream; // 카드 요소에 stream 데이터 직접 저장
     
@@ -165,7 +246,12 @@ function createSearchResultCard(item, container) {
         info.appendChild(description);
     }
 
+    // 즐겨찾기 별표를 info 영역에 추가
+    var favoriteStarElement = createFavoriteStar(item);
+    info.appendChild(favoriteStarElement);
+
     card.appendChild(info);
+    
     card.setAttribute('tabindex', '-1');
     card.chzzkData = item;
     
@@ -182,5 +268,7 @@ function createSearchResultCard(item, container) {
 // 모듈 내보내기
 window.CardManager = {
     createLiveCard: createLiveCard,
-    createSearchResultCard: createSearchResultCard
+    createSearchResultCard: createSearchResultCard,
+    createFavoriteStar: createFavoriteStar,
+    updateStarAppearance: updateStarAppearance
 }; 

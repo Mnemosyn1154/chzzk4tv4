@@ -42,6 +42,90 @@ function fetchSearchResults(keyword) {
 }
 
 /**
+ * 개별 채널의 현재 라이브 상태 확인
+ * @param {string} channelId - 채널 ID
+ * @returns {Promise<Object|null>} 라이브 중이면 라이브 데이터, 아니면 null
+ */
+function fetchChannelLiveStatus(channelId) {
+    if (!channelId) {
+        console.error("fetchChannelLiveStatus: channelId is missing");
+        return Promise.resolve(null);
+    }
+
+    var apiUrl = 'https://api.chzzk.naver.com/service/v2/channels/' + channelId + '/live-detail';
+    
+    return fetch(apiUrl).then(function(response) {
+        if (!response.ok) {
+            if (response.status === 404) {
+                // 404는 라이브 중이 아님을 의미
+                return null;
+            } else {
+                throw new Error('API call failed with status: ' + response.status);
+            }
+        }
+        return response.json();
+    }).then(function(data) {
+        if (data && data.content) {
+            var content = data.content;
+            
+            // 치지직 라이브 상태 체크 - 'OPEN' 상태가 라이브 중을 의미
+            if (content.status === 'OPEN' || content.status === 'STARTED' || 
+                content.liveStatus === 'OPEN' || content.liveStatus === 'STARTED') {
+                return content;
+            }
+        }
+        return null;
+    }).catch(function(error) {
+        console.error('Error fetching channel live status for channelId ' + channelId + ':', error);
+        return null;
+    });
+}
+
+/**
+ * 즐겨찾기 채널들의 현재 라이브 상태 확인
+ * @returns {Promise<Array>} 현재 라이브 중인 즐겨찾기 채널 목록
+ */
+function fetchFavoriteLiveChannels() {
+    if (!window.FavoriteManager) {
+        return Promise.resolve([]);
+    }
+    
+    var favorites = window.FavoriteManager.getFavorites();
+    if (!favorites || favorites.length === 0) {
+        return Promise.resolve([]);
+    }
+    
+    // 모든 즐겨찾기 채널의 라이브 상태를 병렬로 확인
+    var promises = favorites.map(function(favorite) {
+        return fetchChannelLiveStatus(favorite.channelId).then(function(liveData) {
+            if (liveData) {
+                // 라이브 중인 경우 채널 정보와 라이브 정보 합치기
+                return {
+                    liveTitle: liveData.liveTitle,
+                    liveImageUrl: liveData.liveImageUrl,
+                    concurrentUserCount: liveData.concurrentUserCount || 0,
+                    livePlaybackJson: liveData.livePlaybackJson,
+                    status: liveData.status,
+                    channel: {
+                        channelId: favorite.channelId,
+                        channelName: favorite.channelName,
+                        channelImageUrl: favorite.channelImageUrl
+                    }
+                };
+            }
+            return null;
+        });
+    });
+    
+    return Promise.all(promises).then(function(results) {
+        // null이 아닌 라이브 중인 채널들만 필터링
+        return results.filter(function(result) {
+            return result !== null;
+        });
+    });
+}
+
+/**
  * 라이브 상세 정보 가져오기
  * @param {Object} liveDataObject - 기본 라이브 데이터 객체
  * @returns {Promise<Object|null>} 상세 라이브 정보 또는 null
@@ -101,5 +185,7 @@ function fetchFullLiveDetails(liveDataObject) {
 window.ChzzkAPI = {
     fetchLives: fetchLives,
     fetchSearchResults: fetchSearchResults,
-    fetchFullLiveDetails: fetchFullLiveDetails
+    fetchFullLiveDetails: fetchFullLiveDetails,
+    fetchChannelLiveStatus: fetchChannelLiveStatus,
+    fetchFavoriteLiveChannels: fetchFavoriteLiveChannels
 }; 

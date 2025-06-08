@@ -124,6 +124,7 @@ h2 {
     flex-direction: column;
     border: 0.1rem solid var(--border-color); /* 1px -> 0.1rem */
     outline: none; /* 브라우저 기본 포커스 아웃라인 제거 */
+    position: relative; /* 별표 absolute 위치 지정을 위해 추가 */
 }
 
 .live-card:focus {
@@ -156,10 +157,12 @@ h2 {
 #search-results-container .live-card-info {
     padding: 0 1rem 1rem; /* 상단 패딩 제거, 좌우 및 하단 패딩 조정 */
     text-align: center; /* 텍스트 중앙 정렬 */
+    position: relative; /* 별표 위치 지정을 위해 추가 */
 }
 
 .live-card-info {
     padding: 1.5rem; /* 15px -> 1.5rem */
+    position: relative; /* 별표 위치 지정을 위해 추가 */
 }
 
 .live-card-title {
@@ -277,6 +280,34 @@ h2 {
 
 /* .adult-content-placeholder 규칙 전체 삭제 */ 
 
+/* 즐겨찾기 별표 스타일 */
+.favorite-star {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 2.0rem;
+    color: #FFD700; /* 노란색 별표 */
+    cursor: pointer;
+    z-index: 15;
+    text-shadow: 0.1rem 0.1rem 0.2rem rgba(0, 0, 0, 0.8); /* 별표 가독성을 위한 그림자 */
+    transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.favorite-star:hover {
+    transform: scale(1.2);
+    color: #FFF000; /* 호버 시 더 밝은 노란색 */
+}
+
+.favorite-star.active {
+    color: #FFD700; /* 즐겨찾기 활성 상태 - 채워진 별 */
+}
+
+.favorite-star.inactive {
+    color: rgba(255, 215, 0, 0.3); /* 즐겨찾기 비활성 상태 - 투명한 별 */
+}
+
 /* 포커스 스타일 */
 .live-card.focused {
     border-width: 0.3rem !important;
@@ -358,6 +389,13 @@ h2 {
     flex: 1;
 }
 
+/* 제목 내 즐겨찾기 별표 (inline) */
+#watch-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 #watch-info-panel.visible {
     opacity: 1;
     visibility: visible;
@@ -379,7 +417,10 @@ h2 {
     font-weight: bold;
     margin: 0 0 0.1rem 0; 
     text-align: left; 
-    color: var(--highlight-green); 
+    color: var(--highlight-green);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 #watch-streamer-name {
@@ -408,6 +449,49 @@ h2 {
     font-size: 1.3rem;
     color: var(--secondary-text-color); /* 덜 강조된 색 */
     margin-left: 1rem; /* 시청자 수와 간격 */
+}
+
+/* 시청 화면 즐겨찾기 버튼 스타일 (inline) */
+.watch-favorite-btn {
+    width: 3.2rem;
+    height: 3.2rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 0.15rem solid var(--border-color);
+    border-radius: 0.6rem;
+    color: #FFD700; /* 노란색 별표 */
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+    flex-shrink: 0; /* 축소 방지 */
+    margin-left: auto; /* 우측으로 밀어내기 */
+}
+
+.watch-favorite-btn:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+    border-color: var(--highlight-green);
+}
+
+.watch-favorite-btn:focus {
+    border-color: var(--highlight-green) !important;
+    border-width: 0.3rem !important;
+    box-shadow: 0 0 0.8rem rgba(97, 255, 126, 0.3);
+}
+
+.watch-favorite-btn.active {
+    color: #FFD700; /* 즐겨찾기 활성 - 선명한 노란색 */
+    background-color: rgba(255, 215, 0, 0.1);
+}
+
+.watch-favorite-btn.inactive {
+    color: rgba(255, 215, 0, 0.4); /* 즐겨찾기 비활성 - 투명한 노란색 */
+    background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* 카테고리와 설명 관련 CSS 제거됨 */

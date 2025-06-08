@@ -1,5 +1,8 @@
 // 리모컨 키 처리 모듈 (ES5 호환)
 
+// 시청 화면 포커스 상태
+var watchScreenFocusIndex = -1; // -1: 포커스 없음, 0: 즐겨찾기 버튼
+
 /**
  * 시청 화면에서의 키 처리
  * @param {KeyboardEvent} event - 키보드 이벤트
@@ -9,11 +12,35 @@ function handleWatchScreenKeys(event) {
         case 461: // Back
         case 27:  // Escape
             event.preventDefault();
+            clearWatchScreenFocus();
             if (typeof hideWatchScreen === 'function') {
                 hideWatchScreen();
                 restorePreviousView();
                 if (window.Navigation) {
                     Navigation.initializeFocus();
+                }
+            }
+            return true;
+            
+        case 37: // ArrowLeft
+        case 39: // ArrowRight
+            event.preventDefault();
+            toggleWatchScreenFocus();
+            return true;
+            
+        case 13: // OK
+        case 404: // Green button
+            event.preventDefault();
+            if (watchScreenFocusIndex === 0) {
+                // 즐겨찾기 버튼에 포커스가 있으면 토글 실행
+                var favoriteBtn = document.getElementById('watch-favorite-btn');
+                if (favoriteBtn && typeof toggleWatchFavorite === 'function') {
+                    toggleWatchFavorite();
+                }
+            } else {
+                // 포커스가 없으면 정보 팝업 토글
+                if (typeof showInfoPopup === 'function') {
+                    showInfoPopup();
                 }
             }
             return true;
@@ -33,15 +60,39 @@ function handleWatchScreenKeys(event) {
             console.log('Stop button pressed');
             return true;
             
-        case 13: // OK - 정보 팝업 토글 등
-            event.preventDefault();
-            if (typeof showInfoPopup === 'function') {
-                showInfoPopup();
-            }
-            return true;
-            
         default:
             return false;
+    }
+}
+
+/**
+ * 시청 화면 포커스 토글
+ */
+function toggleWatchScreenFocus() {
+    var favoriteBtn = document.getElementById('watch-favorite-btn');
+    if (!favoriteBtn) return;
+    
+    if (watchScreenFocusIndex === -1) {
+        // 포커스가 없으면 즐겨찾기 버튼에 포커스
+        watchScreenFocusIndex = 0;
+        favoriteBtn.focus();
+        console.log('시청 화면: 즐겨찾기 버튼에 포커스');
+    } else {
+        // 포커스가 있으면 해제
+        watchScreenFocusIndex = -1;
+        favoriteBtn.blur();
+        console.log('시청 화면: 포커스 해제');
+    }
+}
+
+/**
+ * 시청 화면 포커스 초기화
+ */
+function clearWatchScreenFocus() {
+    watchScreenFocusIndex = -1;
+    var favoriteBtn = document.getElementById('watch-favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.blur();
     }
 }
 
@@ -154,5 +205,7 @@ window.RemoteControl = {
     destroyRemoteControl: destroyRemoteControl,
     handleWatchScreenKeys: handleWatchScreenKeys,
     handleNormalScreenKeys: handleNormalScreenKeys,
-    restorePreviousView: restorePreviousView
+    restorePreviousView: restorePreviousView,
+    toggleWatchScreenFocus: toggleWatchScreenFocus,
+    clearWatchScreenFocus: clearWatchScreenFocus
 }; 
