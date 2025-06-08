@@ -65,7 +65,8 @@ h2 {
     min-width: 30rem;    /* 300px -> 30rem */
 }
 
-#search-keyword-input:focus {
+#search-keyword-input:focus,
+#search-keyword-input.focused {
     outline: none;
     border-color: var(--highlight-green);
 }

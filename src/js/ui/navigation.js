@@ -28,7 +28,14 @@ function initializeFocus() {
     focusableElements = focusableElements.concat(getActiveCards());
     
     elementsPerRow = Utils.getColumnCount();
-    currentFocusIndex = 0;
+    
+    // 앱 시작 시 첫 번째 카드에 포커스 (키보드 방지)
+    var activeCards = getActiveCards();
+    if (activeCards.length > 0) {
+        currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+    } else {
+        currentFocusIndex = 0; // 카드가 없으면 검색창
+    }
     
     updateFocusableElements();
 }
@@ -68,9 +75,13 @@ function updateFocusableElements() {
     
     elementsPerRow = Utils.getColumnCount();
     
-    // 기존 포커스가 범위를 벗어났다면 첫 번째 요소로 이동
+    // 기존 포커스가 범위를 벗어났다면 적절한 위치로 이동
     if (currentFocusIndex >= focusableElements.length) {
-        currentFocusIndex = 0;
+        if (activeCards.length > 0) {
+            currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+        } else {
+            currentFocusIndex = 0; // 카드가 없으면 검색창
+        }
     }
     
     setFocus(currentFocusIndex);
@@ -87,6 +98,10 @@ function setFocus(index) {
     var oldFocusedElement = focusableElements[currentFocusIndex];
     if (oldFocusedElement) {
         oldFocusedElement.classList.remove('focused');
+        // 검색창에서 포커스가 벗어날 때 명시적으로 blur 처리
+        if (oldFocusedElement.id === 'search-keyword-input') {
+            oldFocusedElement.blur();
+        }
     }
     
     // 새로운 포커스 설정
@@ -94,7 +109,15 @@ function setFocus(index) {
     var newFocusedElement = focusableElements[currentFocusIndex];
     if (newFocusedElement) {
         newFocusedElement.classList.add('focused');
-        newFocusedElement.focus();
+        
+        // 검색창에는 시각적 포커스만 주고, 실제 DOM focus는 Enter 키에서만
+        if (newFocusedElement.id === 'search-keyword-input') {
+            console.log('검색창에 시각적 포커스만 설정 (키보드 방지)');
+            // DOM focus를 주지 않음으로써 키보드가 자동으로 나타나지 않음
+        } else {
+            // 다른 요소들은 정상적으로 DOM focus 설정
+            newFocusedElement.focus();
+        }
     }
 }
 
@@ -152,6 +175,11 @@ function handleKeyDown(key) {
         case 'Enter':
             if (currentElement.id === 'search-button') {
                 currentElement.click();
+            } else if (currentElement.id === 'search-keyword-input') {
+                // 검색창에서 Enter 시 실제 DOM focus 설정 (키보드 활성화)
+                currentElement.focus();
+                console.log('검색창에 키보드 활성화');
+                return true; // setFocus 호출하지 않고 바로 리턴
             } else if (currentElement.classList && currentElement.classList.contains('live-card')) {
                 // 카드 선택 시 OK 버튼과 동일한 동작
                 handleOKButton();
