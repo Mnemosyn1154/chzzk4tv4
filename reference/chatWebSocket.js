@@ -1,13 +1,13 @@
 // Chat WebSocket Module
 
-import { MAX_CHAT_MESSAGES } from './uiUpdater.js'; // MAX_CHAT_MESSAGES 임포트
+// import { MAX_CHAT_MESSAGES } from './uiUpdater.js'; // MAX_CHAT_MESSAGES 임포트
 
-let chatSocket;
-let pingInterval;
+var chatSocket;
+var pingInterval;
 
 // WebSocket Chat Functions
 function sendHandshake(ws, chatChannelId, accessToken) {
-    const handshakeMessage = {
+    var handshakeMessage = {
         ver: "2",
         cmd: 100, // CMD_CONNECT
         svcid: "game",
@@ -26,9 +26,9 @@ function sendHandshake(ws, chatChannelId, accessToken) {
 
 function startPing(ws) {
     if (pingInterval) clearInterval(pingInterval);
-    pingInterval = setInterval(() => {
+    pingInterval = setInterval(function() {
         if (ws && ws.readyState === WebSocket.OPEN) {
-            const pingMessage = { ver: "2", cmd: 10002 }; // CMD_PING
+            var pingMessage = { ver: "2", cmd: 10002 }; // CMD_PING
             ws.send(JSON.stringify(pingMessage));
         }
     }, 30000); 
@@ -39,9 +39,9 @@ function stopPing() {
     pingInterval = null;
 }
 
-export async function connectChatWebSocket(chatChannelId, accessToken, updateState, appState, renderChatMessage) {
-    const serverNo = Math.floor(Math.random() * 10) + 1; 
-    const socketUrl = `wss://kr-ss${serverNo}.chat.naver.com/chat`;
+function connectChatWebSocket(chatChannelId, accessToken, updateState, appState, renderChatMessage) {
+    var serverNo = Math.floor(Math.random() * 10) + 1; 
+    var socketUrl = "wss://kr-ss" + serverNo + ".chat.naver.com/chat";
 
     if (chatSocket && chatSocket.readyState === WebSocket.OPEN && appState.chat.chatChannelId === chatChannelId) {
         console.log("[WebSocket] Already connected to this chat.");
@@ -51,28 +51,28 @@ export async function connectChatWebSocket(chatChannelId, accessToken, updateSta
         disconnectChatWebSocket(); // 다른 채널이었으면 이전 연결 종료
     }
 
-    console.log(`[WebSocket] Connecting to ${socketUrl} for chatChannelId: ${chatChannelId}`);
+    console.log("[WebSocket] Connecting to " + socketUrl + " for chatChannelId: " + chatChannelId);
     chatSocket = new WebSocket(socketUrl);
     updateState('chat.isConnected', false); // 연결 시도 중 상태
 
-    chatSocket.onopen = () => {
+    chatSocket.onopen = function() {
         console.log("[WebSocket] Connected.");
         updateState('chat.isConnected', true); 
         sendHandshake(chatSocket, chatChannelId, accessToken);
         startPing(chatSocket);
     };
 
-    chatSocket.onmessage = (event) => {
+    chatSocket.onmessage = function(event) {
         handleChatMessage(event, updateState, appState, renderChatMessage);
     };
 
-    chatSocket.onerror = (error) => {
+    chatSocket.onerror = function(error) {
         console.error("[WebSocket] Error:", error);
         stopPing();
         updateState('chat.isConnected', false); 
     };
 
-    chatSocket.onclose = (event) => {
+    chatSocket.onclose = function(event) {
         console.log("[WebSocket] Disconnected or connection failed. Code:", event.code, "Reason:", event.reason);
         stopPing();
         updateState('chat.isConnected', false); 
@@ -80,11 +80,11 @@ export async function connectChatWebSocket(chatChannelId, accessToken, updateSta
 }
 
 function handleChatMessage(event, updateState, appState, renderChatMessage) {
-    const message = JSON.parse(event.data);
+    var message = JSON.parse(event.data);
     
     switch (message.cmd) {
         case 10100: 
-            console.log("[WebSocket] Connection successful (CMD_CONNECTED). SID:", message.bdy?.sid || 'N/A');
+            console.log("[WebSocket] Connection successful (CMD_CONNECTED). SID:", message.bdy && message.bdy.sid ? message.bdy.sid : 'N/A');
             break;
         case 93101: // 일반 채팅 메시지
             if (message.bdy && Array.isArray(message.bdy)) {
@@ -95,17 +95,17 @@ function handleChatMessage(event, updateState, appState, renderChatMessage) {
             break;
         case 93102: 
             if (message.bdy && Array.isArray(message.bdy)) {
-                message.bdy.forEach(donation => {
-                    const extras = donation.extras ? JSON.parse(donation.extras) : {};
-                    console.log(`[DONATION] ${extras.nickname || '익명'}님이 ${extras.payAmount}원 후원! 메시지: ${extras.comment || donation.msg || ''}`);
+                message.bdy.forEach(function(donation) {
+                    var extras = donation.extras ? JSON.parse(donation.extras) : {};
+                    console.log("[DONATION] " + (extras.nickname || '익명') + "님이 " + extras.payAmount + "원 후원! 메시지: " + (extras.comment || donation.msg || ''));
                 });
             }
             break;
          case 93103: 
             if (message.bdy && Array.isArray(message.bdy)) {
-                message.bdy.forEach(sysMsg => {
-                    const extras = sysMsg.extras ? JSON.parse(sysMsg.extras) : {};
-                    console.log(`[SYSTEM] ${extras.description || sysMsg.msg}`);
+                message.bdy.forEach(function(sysMsg) {
+                    var extras = sysMsg.extras ? JSON.parse(sysMsg.extras) : {};
+                    console.log("[SYSTEM] " + (extras.description || sysMsg.msg));
                 });
             }
             break;
@@ -117,25 +117,23 @@ function handleChatMessage(event, updateState, appState, renderChatMessage) {
 }
 
 function handleChatMessages(message, updateState, appState, renderChatMessage) {
-    console.log(`[ChatMsgDebug] Received CMD_CHAT. Current appState.chat.autoOpenOnNewMessage: ${appState.chat.autoOpenOnNewMessage}, visibility: ${appState.chat.visibility}`);
+    console.log("[ChatMsgDebug] Received CMD_CHAT. Current appState.chat.autoOpenOnNewMessage: " + appState.chat.autoOpenOnNewMessage + ", visibility: " + appState.chat.visibility);
     
     if (appState.chat.autoOpenOnNewMessage) {
         handleAutoOpenChat(updateState, appState);
     }
 
-    message.bdy.forEach(chat => {
+    message.bdy.forEach(function(chat) {
         // appState.chat.messages 배열에 메시지 추가
         appState.chat.messages.push(chat);
 
         // 메시지 개수 제한 (appState.chat.messages)
-        if (appState.chat.messages.length > MAX_CHAT_MESSAGES) {
-            const removeCount = appState.chat.messages.length - MAX_CHAT_MESSAGES;
+        if (appState.chat.messages.length > 50) { // MAX_CHAT_MESSAGES 대신 상수 값 사용
+            var removeCount = appState.chat.messages.length - 50;
             appState.chat.messages.splice(0, removeCount);
-            console.log(`[AppState] Removed ${removeCount} old messages from appState.chat.messages. Current count: ${appState.chat.messages.length}`);
+            console.log("[AppState] Removed " + removeCount + " old messages from appState.chat.messages. Current count: " + appState.chat.messages.length);
         }
-        // updateState를 사용하여 messages 배열 변경 알림 (필요한 경우, UI가 이 배열을 직접 구독하지 않는다면 생략 가능)
-        // updateState('chat.messages', [...appState.chat.messages]); // 새 배열로 교체하여 변경 감지 유도
-
+        
         renderChatMessage(chat); // 메시지 렌더링 함수 호출 (DOM 업데이트)
     });
 }
@@ -148,7 +146,7 @@ function handleAutoOpenChat(updateState, appState) {
         // 이미 확장되어 있고 자동 숨김 타이머가 실행 중이면, 타이머 리셋
         console.log('[ChatMsgDebug] Resetting auto-hide timer.');
         clearTimeout(window.autoHideChatTimerId);
-        window.autoHideChatTimerId = setTimeout(() => {
+        window.autoHideChatTimerId = setTimeout(function() {
             if (appState.chat.visibility === 'expanded' && appState.chat.autoOpenOnNewMessage) {
                 console.log('[ChatMsgDebug] Auto-hiding after reset timeout.');
                 updateState('chat.visibility', 'hidden');
@@ -165,7 +163,7 @@ function handleAutoOpenChat(updateState, appState) {
             console.log('[ChatMsgDebug] Clearing previous autoHideChatTimerId before setting new one.');
             clearTimeout(window.autoHideChatTimerId);
         }
-        window.autoHideChatTimerId = setTimeout(() => {
+        window.autoHideChatTimerId = setTimeout(function() {
             if (appState.chat.visibility === 'expanded' && appState.chat.autoOpenOnNewMessage) {
                 console.log('[ChatMsgDebug] Auto-hiding after initial timeout (new message).');
                 updateState('chat.visibility', 'hidden');
@@ -176,7 +174,7 @@ function handleAutoOpenChat(updateState, appState) {
     }
 }
 
-export function disconnectChatWebSocket() {
+function disconnectChatWebSocket() {
     if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
         chatSocket.close();
         console.log("[WebSocket] Disconnected.");

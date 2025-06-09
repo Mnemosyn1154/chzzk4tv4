@@ -1,0 +1,15 @@
+reference/
+node_modules/
+.git/
+.DS_Store
+*.ipk
+README.md
+.gitignore
+package.json
+package-lock.json
+progress.md
+chzzk_api_guide.md
+images-20250604T031152Z-1-001.zip
+.vooster/
+.cursor/
+logs/ 

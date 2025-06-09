@@ -549,12 +549,13 @@ h2 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 0.5rem 1rem; /* 세로 패딩 축소 */
     background-color: rgba(0, 0, 0, 0.5);
     border-bottom: 0.1rem solid var(--border-color);
     color: var(--text-color);
-    font-size: 1.8rem;
+    font-size: 1.6rem; /* 폰트 크기 축소 */
     font-weight: bold;
+    flex-shrink: 0; /* 헤더 크기 고정 */
 }
 
 #chat-close-btn {
@@ -583,9 +584,16 @@ h2 {
 
 #chat-messages {
     height: 100%;
-    padding: 1.5rem;
+    padding: 1.5rem 1.5rem 3rem 1.5rem; /* 하단 패딩 추가 */
     overflow-y: auto;
     flex-grow: 1;
+    -ms-overflow-style: none; /* IE, Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* webkit 기반 브라우저(크롬, 사파리, webOS) 스크롤바 숨기기 */
+#chat-messages::-webkit-scrollbar {
+    display: none;
 }
 
 /* 채팅 메시지 스타일 */
