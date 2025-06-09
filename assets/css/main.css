@@ -519,3 +519,126 @@ h2 {
 #watch-info-panel a {    
     ... 포커스 스타일 ... 
 } */ 
+
+/* === 채팅 관련 CSS === */
+
+/* 채팅 토글 화살표 */
+#chat-toggle-arrow {
+    position: absolute;
+    top: 50%;
+    right: 2rem;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 0.2rem solid var(--highlight-green);
+    border-radius: 0.8rem;
+    padding: 0.7rem 1.0rem;
+    color: var(--highlight-green);
+    font-size: 1.5rem;
+    font-weight: bold;
+    z-index: 1000;
+    transition: all 0.3s ease-in-out;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#chat-toggle-arrow.focused {
+    background-color: var(--highlight-green);
+    color: var(--background-dark);
+    border-color: var(--highlight-green);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 1rem rgba(97, 255, 126, 0.5);
+}
+
+/* 채팅창 */
+#chat-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-left: 0.2rem solid var(--border-color);
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+#chat-panel.show {
+    transform: translateX(0);
+}
+
+/* 채팅창 헤더 */
+#chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-bottom: 0.1rem solid var(--border-color);
+    color: var(--text-color);
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+#chat-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 2.3rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    transition: background-color 0.2s ease;
+}
+
+#chat-close-btn:hover,
+#chat-close-btn:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    outline: none;
+}
+
+/* 채팅 메시지 컨테이너 */
+#chat-messages-container {
+    flex: 1;
+    overflow: hidden;
+    padding: 0.5rem;
+}
+
+#chat-messages {
+    height: 100%;
+    overflow-y: auto;
+    padding: 0.5rem;
+    font-size: 1.6rem;
+    line-height: 1.4;
+}
+
+/* 채팅 메시지 스타일 */
+.chat-message {
+    margin-bottom: 0.8rem;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    word-wrap: break-word;
+}
+
+.chat-message .chat-username {
+    font-weight: bold;
+    color: var(--highlight-green);
+    font-size: 1.4rem;
+}
+
+.chat-message .chat-content {
+    color: var(--text-color);
+    margin-top: 0.2rem;
+}
+
+.chat-message.donation {
+    background-color: rgba(255, 215, 0, 0.1);
+    border-left: 0.3rem solid #FFD700;
+}
+
+.chat-message.donation .chat-username {
+    color: #FFD700;
+} 

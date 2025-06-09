@@ -225,6 +225,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Watch screen critical elements not found!");
     }
 
+    // 채팅 매니저 초기화
+    if (window.ChatManager) {
+        window.ChatManager.initialize();
+    }
+
     if (chzzkPlayerElement) {
         chzzkPlayerElement.addEventListener('playing', function() {
             console.log("Player event: playing");
@@ -477,6 +482,12 @@ function showWatchScreen(broadcastData) {
     initializeWatchFavoriteButton();
     setWatchFavoriteState(broadcastData);
     
+    // 채팅 초기화 및 시작
+    if (window.ChatManager) {
+        window.ChatManager.initializeWatch();
+        window.ChatManager.startWatch(broadcastData);
+    }
+    
     // 플레이어 로딩 표시
     showPlayerLoading(true, '방송 연결 중...');
     
@@ -498,6 +509,13 @@ function hideWatchScreen() {
     
     stopPlayer();
     hideInfoPopup();
+    
+    // 채팅 연결 해제
+    if (window.ChatManager) {
+        window.ChatManager.disconnect();
+        window.ChatManager.hidePanel();
+        window.ChatManager.hideToggleArrow();
+    }
     
     // 현재 시청 데이터 초기화
     currentWatchData = null;

@@ -36,6 +36,24 @@
             <div id="watch-player-container">
                 <video id="chzzk-player" style="width:100%; height:100%; background-color:black;" controls playsinline></video>
                 <div id="player-status-overlay" style="display:none;">로딩 중...</div>
+                
+                <!-- 채팅 토글 화살표 -->
+                <div id="chat-toggle-arrow" style="display: none;">
+                    <span>▶</span>
+                </div>
+                
+                <!-- 채팅창 -->
+                <div id="chat-panel" style="display: none;">
+                    <div id="chat-header">
+                        <span>실시간 채팅</span>
+                        <button id="chat-close-btn">✕</button>
+                    </div>
+                    <div id="chat-messages-container">
+                        <div id="chat-messages">
+                            <!-- 채팅 메시지가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -51,6 +69,7 @@
     <script type="text/javascript" src="src/js/ui/cardManager.js"></script>
     <script type="text/javascript" src="src/js/ui/navigation.js"></script>
     <script type="text/javascript" src="src/js/ui/searchManager.js"></script>
+    <script type="text/javascript" src="src/js/ui/chatManager.js"></script>
     <script type="text/javascript" src="src/js/ui/remoteControl.js"></script>
     <script type="text/javascript" src="ui/watchScreen.js"></script>
     
