@@ -9,6 +9,10 @@ var isConnected = false;
 var messageQueue = [];
 var maxMessages = 50; // 최대 메시지 개수 제한
 
+// 사용자별 고유 색상을 위한 데이터
+var userChatStyles = {};
+var pastelColors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
+
 // 채팅창 DOM 요소들
 var chatPanel = null;
 var chatMessages = null;
@@ -105,6 +109,30 @@ function toggleChatPanel() {
 }
 
 /**
+ * 사용자 이름 기반으로 고유한 채팅 색상 반환
+ * @param {string} username
+ * @returns {string} color
+ */
+function getUserChatColor(username) {
+    if (userChatStyles[username]) {
+        return userChatStyles[username];
+    }
+
+    // 간단한 해시 함수로 유저별 인덱스 생성
+    var hash = 0;
+    for (var i = 0; i < username.length; i++) {
+        hash = username.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // 32비트 정수로 변환
+    }
+
+    var colorIndex = Math.abs(hash) % pastelColors.length;
+    var color = pastelColors[colorIndex];
+
+    userChatStyles[username] = color;
+    return color;
+}
+
+/**
  * 채팅 메시지 추가
  * @param {Object} messageData - 메시지 데이터
  */
@@ -119,10 +147,15 @@ function addChatMessage(messageData) {
         messageElement.classList.add('system');
         messageElement.textContent = messageData.message || '';
     } else {
+        if (messageData.isDonation) {
+            messageElement.classList.add('donation');
+        }
+        
         var usernameElement = document.createElement('div');
         usernameElement.className = 'chat-username';
         usernameElement.textContent = messageData.username || '익명';
-        
+        usernameElement.style.color = getUserChatColor(messageData.username || '익명');
+
         var contentElement = document.createElement('div');
         contentElement.className = 'chat-content';
         contentElement.textContent = messageData.message || '';
