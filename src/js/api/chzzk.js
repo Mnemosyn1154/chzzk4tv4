@@ -169,7 +169,7 @@ function fetchFullLiveDetails(liveDataObject) {
         return response.json();
     }).then(function(data) {
         if (data && data.content) {
-            console.log("Full live details for channel fetched:", data);
+            console.log("Full live details for channel fetched:", data.content);
             return data.content;
         } else {
             console.error("No content in API response for full live details (channel)", data);
@@ -181,11 +181,55 @@ function fetchFullLiveDetails(liveDataObject) {
     });
 }
 
+/**
+ * 채팅 액세스 토큰 가져오기
+ * @param {string} chatChannelId - 채팅 채널 ID (live-detail API에서 얻어온 값)
+ * @returns {Promise<string|null>} 액세스 토큰 또는 null
+ */
+function fetchChatAccessToken(chatChannelId) {
+    console.log("Fetching chat access token for chatChannelId: " + chatChannelId);
+    if (!chatChannelId) {
+        console.error("fetchChatAccessToken: chatChannelId is missing");
+        return Promise.resolve(null);
+    }
+    
+    // 실제 웹에서 사용하는 공식 API 주소
+    var apiUrl = 'https://comm-api.game.naver.com/nng_main/v1/chats/access-token?channelId=' + chatChannelId + '&chatType=STREAMING';
+    
+    console.log("Requesting chat access token from: " + apiUrl);
+
+    // 이 API는 응답 형식이 다를 수 있으므로 별도 fetch 사용
+    return fetch(apiUrl)
+        .then(function(response) {
+            if (!response.ok) {
+                // 에러 응답의 본문을 텍스트로 읽어 로깅
+                return response.text().then(function(text) {
+                    throw new Error('Failed to fetch chat access token. Status: ' + response.status + ', Body: ' + text);
+                });
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (data && data.content && data.content.accessToken) {
+                console.log("Successfully fetched chat access token.");
+                return data.content.accessToken;
+            } else {
+                console.error("Failed to get chat access token from response:", data);
+                return null;
+            }
+        })
+        .catch(function(error) {
+            console.error('Error during fetchChatAccessToken for chatChannelId ' + chatChannelId + ':', error);
+            return null;
+        });
+}
+
 // 모듈 내보내기
 window.ChzzkAPI = {
     fetchLives: fetchLives,
     fetchSearchResults: fetchSearchResults,
     fetchFullLiveDetails: fetchFullLiveDetails,
     fetchChannelLiveStatus: fetchChannelLiveStatus,
-    fetchFavoriteLiveChannels: fetchFavoriteLiveChannels
+    fetchFavoriteLiveChannels: fetchFavoriteLiveChannels,
+    fetchChatAccessToken: fetchChatAccessToken
 }; 

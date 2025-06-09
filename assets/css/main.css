@@ -616,4 +616,12 @@ h2 {
 
 .chat-message.donation .chat-username {
     color: #FFD700;
+}
+
+.chat-message.system {
+    background-color: rgba(100, 100, 100, 0.2);
+    color: #ccc;
+    font-style: italic;
+    text-align: center;
+    font-size: 1.3rem;
 } 

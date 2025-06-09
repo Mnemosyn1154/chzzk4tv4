@@ -485,10 +485,10 @@ function setWatchFavoriteState(broadcastData) {
 function showWatchScreen(broadcastData) {
     var startTime = Date.now(); // 성능 측정 시작
     console.log("Showing watch screen with data:", broadcastData);
-    
+
     // 현재 방송 데이터 저장
     currentWatchData = broadcastData;
-    
+
     if (!watchSectionElement) {
         console.error("Watch section element not found!");
         return;
@@ -499,31 +499,58 @@ function showWatchScreen(broadcastData) {
     
     var searchSection = document.getElementById('search-section');
     if (searchSection) searchSection.style.display = 'none';
-    
+
     // 정보 표시 (빠른 표시)
     populateWatchInfo(broadcastData);
-    
+
     // 즐겨찾기 버튼 항상 초기화 및 상태 설정
     initializeWatchFavoriteButton();
     setWatchFavoriteState(broadcastData);
-    
-    // 채팅 초기화 및 시작
+
+    // 채팅 UI 초기화
     if (window.ChatManager) {
         window.ChatManager.initializeWatch();
-        window.ChatManager.startWatch(broadcastData);
     }
-    
+
     // 플레이어 로딩 표시
-    showPlayerLoading(true, '방송 연결 중...');
-    
-    // 스트림 초기화 (비동기)
-    setTimeout(function() {
-        initAndPlayStream(broadcastData);
-        var loadTime = Date.now() - startTime;
-        console.log("Watch screen loading took: " + loadTime + "ms");
-    }, 100); // 100ms 지연으로 UI 응답성 개선
-    
-    // 정보 팝업 표시
+    showPlayerLoading(true, '방송 정보 확인 중...');
+
+    // 스트림 초기화 및 채팅 연결
+    // broadcastData는 이미 상세 정보가 포함된 객체입니다.
+    if (!broadcastData) {
+        showPlayerError('방송 정보를 가져올 수 없습니다.');
+        setTimeout(hideWatchScreen, 2000);
+        return;
+    }
+
+    // 1. 스트림 초기화
+    initAndPlayStream(broadcastData);
+
+    // 2. 채팅 연결 시작 (accessToken 가져오기 및 연결)
+    var chatChannelId = broadcastData.chatChannelId;
+
+    if (window.ChatManager && chatChannelId) {
+        console.log("Found chatChannelId. Attempting to start chat: " + chatChannelId);
+        
+        ChzzkAPI.fetchChatAccessToken(chatChannelId).then(function(accessToken) {
+            if (accessToken) {
+                console.log("Successfully got accessToken, now starting chat.");
+                var chatDetails = {
+                    chatChannelId: chatChannelId,
+                    accessToken: accessToken
+                };
+                window.ChatManager.startWatch(chatDetails);
+            } else {
+                console.error("Failed to get chat accessToken. Chat will not be available.");
+            }
+        }).catch(function(error) {
+            console.error("An error occurred while fetching chat access token:", error);
+        });
+    } else {
+        console.error("Could not start chat: chatChannelId is missing in broadcastData.", broadcastData);
+    }
+
+    // 3. 정보 팝업 표시
     setTimeout(function() {
         showInfoPopup();
         
@@ -532,7 +559,6 @@ function showWatchScreen(broadcastData) {
             if (window.RemoteControl && window.RemoteControl.setInitialWatchFocus) {
                 window.RemoteControl.setInitialWatchFocus();
             } else {
-                // 대체 방법: 직접 포커스 설정
                 var favoriteBtn = document.getElementById('watch-favorite-btn');
                 if (favoriteBtn) {
                     favoriteBtn.focus();
@@ -540,7 +566,7 @@ function showWatchScreen(broadcastData) {
                 }
             }
         }, 150);
-    }, 200); // 더 빠른 표시
+    }, 200);
 }
 
 function hideWatchScreen() {
