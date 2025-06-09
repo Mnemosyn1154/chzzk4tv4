@@ -12,7 +12,7 @@ function initializeApp() {
     console.log("Initializing Chzzk4LGTV4 App...");
     
     // 리모컨 이벤트 리스너 초기화
-    RemoteControl.initializeRemoteControl();
+    RemoteControl.initialize();
     
     // 검색 기능 초기화
     SearchManager.initializeSearch();

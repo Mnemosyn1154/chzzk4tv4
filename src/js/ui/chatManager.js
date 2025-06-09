@@ -11,7 +11,6 @@ var maxMessages = 50; // 최대 메시지 개수 제한
 // 채팅창 DOM 요소들
 var chatPanel = null;
 var chatMessages = null;
-var chatToggleArrow = null;
 var chatCloseBtn = null;
 var isChatPanelVisible = false;
 
@@ -21,10 +20,9 @@ var isChatPanelVisible = false;
 function initializeChatManager() {
     chatPanel = document.getElementById('chat-panel');
     chatMessages = document.getElementById('chat-messages');
-    chatToggleArrow = document.getElementById('chat-toggle-arrow');
     chatCloseBtn = document.getElementById('chat-close-btn');
     
-    if (!chatPanel || !chatMessages || !chatToggleArrow || !chatCloseBtn) {
+    if (!chatPanel || !chatMessages || !chatCloseBtn) {
         console.error('채팅 UI 요소를 찾을 수 없습니다');
         return false;
     }
@@ -39,40 +37,28 @@ function initializeChatManager() {
 }
 
 /**
- * 채팅 토글 화살표 표시
+ * 채팅 토글 화살표 표시 (사용하지 않음)
  */
 function showChatToggleArrow() {
-    if (chatToggleArrow) {
-        chatToggleArrow.style.display = 'block';
-        console.log('채팅 토글 화살표 표시');
-    }
+    // 화살표 제거됨 - 호환성을 위해 함수만 유지
+    console.log('채팅 화살표 기능 비활성화됨');
 }
 
 /**
- * 채팅 토글 화살표 숨기기
+ * 채팅 토글 화살표 숨기기 (사용하지 않음)
  */
 function hideChatToggleArrow() {
-    if (chatToggleArrow) {
-        chatToggleArrow.style.display = 'none';
-        chatToggleArrow.classList.remove('focused');
-        console.log('채팅 토글 화살표 숨김');
-    }
+    // 화살표 제거됨 - 호환성을 위해 함수만 유지
+    console.log('채팅 화살표 기능 비활성화됨');
 }
 
 /**
- * 채팅 토글 화살표에 포커스 설정/해제
+ * 채팅 토글 화살표에 포커스 설정/해제 (사용하지 않음)
  * @param {boolean} focused - 포커스 상태
  */
 function setArrowFocus(focused) {
-    if (!chatToggleArrow) return;
-    
-    if (focused) {
-        chatToggleArrow.classList.add('focused');
-        console.log('채팅 화살표 포커스 설정');
-    } else {
-        chatToggleArrow.classList.remove('focused');
-        console.log('채팅 화살표 포커스 해제');
-    }
+    // 화살표 제거됨 - 호환성을 위해 함수만 유지
+    console.log('채팅 화살표 포커스 기능 비활성화됨');
 }
 
 /**

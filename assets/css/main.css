@@ -522,32 +522,7 @@ h2 {
 
 /* === 채팅 관련 CSS === */
 
-/* 채팅 토글 화살표 */
-#chat-toggle-arrow {
-    position: absolute;
-    top: 50%;
-    right: 2rem;
-    transform: translateY(-50%);
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 0.2rem solid var(--highlight-green);
-    border-radius: 0.8rem;
-    padding: 0.7rem 1.0rem;
-    color: var(--highlight-green);
-    font-size: 1.5rem;
-    font-weight: bold;
-    z-index: 1000;
-    transition: all 0.3s ease-in-out;
-    user-select: none;
-    -webkit-user-select: none;
-}
 
-#chat-toggle-arrow.focused {
-    background-color: var(--highlight-green);
-    color: var(--background-dark);
-    border-color: var(--highlight-green);
-    transform: translateY(-50%) scale(1.1);
-    box-shadow: 0 0 1rem rgba(97, 255, 126, 0.5);
-}
 
 /* 채팅창 */
 #chat-panel {

@@ -10,6 +10,7 @@ var watchFavoriteButton;
 var currentWatchData = null; // 현재 시청 중인 방송 데이터
 var infoPopupTimer = null;
 var hlsInstance = null; // HLS.js 인스턴스를 저장할 변수
+var isInfoPopupCurrentlyVisible = false; // 정보 팝업 상태 관리
 
 // Helper function to get HLS stream URL from livePlaybackJson
 function getStreamUrlFromJson(jsonString) {
@@ -325,7 +326,20 @@ function populateWatchInfo(data) {
 function showInfoPopup() {
     if (!watchInfoPanelContainerElement) return;
     
+    // 이미 표시되어 있으면 타이머만 리셋
+    if (isInfoPopupCurrentlyVisible) {
+        console.log('팝업 이미 표시됨 - 타이머만 리셋');
+        if (infoPopupTimer) {
+            clearTimeout(infoPopupTimer);
+        }
+        infoPopupTimer = setTimeout(function() {
+            hideInfoPopup();
+        }, 4000);
+        return;
+    }
+    
     watchInfoPanelContainerElement.classList.add('visible');
+    isInfoPopupCurrentlyVisible = true;
     
     if (infoPopupTimer) {
         clearTimeout(infoPopupTimer);
@@ -334,17 +348,28 @@ function showInfoPopup() {
     infoPopupTimer = setTimeout(function() {
         hideInfoPopup();
     }, 4000);
+    
+    console.log('팝업 표시됨');
 }
 
 function hideInfoPopup() {
     if (!watchInfoPanelContainerElement) return;
     
+    // 이미 숨겨져 있으면 중복 처리 방지
+    if (!isInfoPopupCurrentlyVisible) {
+        console.log('팝업 이미 숨김 상태');
+        return;
+    }
+    
     watchInfoPanelContainerElement.classList.remove('visible');
+    isInfoPopupCurrentlyVisible = false;
     
     if (infoPopupTimer) {
         clearTimeout(infoPopupTimer);
         infoPopupTimer = null;
     }
+    
+    console.log('팝업 숨김');
 }
 
 /**
@@ -501,6 +526,20 @@ function showWatchScreen(broadcastData) {
     // 정보 팝업 표시
     setTimeout(function() {
         showInfoPopup();
+        
+        // 즐겨찾기 버튼에 초기 포커스 설정
+        setTimeout(function() {
+            if (window.RemoteControl && window.RemoteControl.setInitialWatchFocus) {
+                window.RemoteControl.setInitialWatchFocus();
+            } else {
+                // 대체 방법: 직접 포커스 설정
+                var favoriteBtn = document.getElementById('watch-favorite-btn');
+                if (favoriteBtn) {
+                    favoriteBtn.focus();
+                    console.log('시청 화면 초기 포커스: 즐겨찾기 버튼');
+                }
+            }
+        }, 150);
     }, 200); // 더 빠른 표시
 }
 
@@ -514,7 +553,6 @@ function hideWatchScreen() {
     if (window.ChatManager) {
         window.ChatManager.disconnect();
         window.ChatManager.hidePanel();
-        window.ChatManager.hideToggleArrow();
     }
     
     // 현재 시청 데이터 초기화
@@ -557,3 +595,16 @@ function showPlayerError(errorMessage) {
 // WebOS 비디오 플레이어 연동 부분은 여기에 추가될 예정
 // function initAndPlayStream(streamUrl) { ... }
 // function stopPlayer() { ... } 
+
+/**
+ * 정보 팝업 상태 확인 함수
+ * @returns {boolean} 팝업 표시 여부
+ */
+function isInfoPopupVisible() {
+    return isInfoPopupCurrentlyVisible;
+}
+
+// 전역 함수로 노출
+window.isInfoPopupVisible = isInfoPopupVisible;
+window.showInfoPopup = showInfoPopup;
+window.hideInfoPopup = hideInfoPopup; 
