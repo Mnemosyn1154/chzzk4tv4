@@ -9,6 +9,11 @@ var isConnected = false;
 var messageQueue = [];
 var maxMessages = 50; // 최대 메시지 개수 제한
 
+// 사용자별 고유 스타일을 위한 데이터
+var userChatStyles = {};
+var pastelColors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
+var emojiBadges = ['😊', '😂', '😍', '🤔', '😎', '🥳', '👍', '🔥', '❤️', '⭐', '🚀', '🎉'];
+
 // 채팅창 DOM 요소들
 var chatPanel = null;
 var chatMessages = null;
@@ -105,6 +110,35 @@ function toggleChatPanel() {
 }
 
 /**
+ * 사용자 이름 기반으로 고유한 채팅 스타일 (색상, 뱃지) 반환
+ * @param {string} username
+ * @returns {{color: string, badge: string}}
+ */
+function getUserChatStyle(username) {
+    if (userChatStyles[username]) {
+        return userChatStyles[username];
+    }
+
+    // 간단한 해시 함수로 유저별 인덱스 생성
+    var hash = 0;
+    for (var i = 0; i < username.length; i++) {
+        hash = username.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // 32비트 정수로 변환
+    }
+
+    var colorIndex = Math.abs(hash) % pastelColors.length;
+    var badgeIndex = Math.abs(hash) % emojiBadges.length;
+
+    var style = {
+        color: pastelColors[colorIndex],
+        badge: emojiBadges[badgeIndex]
+    };
+
+    userChatStyles[username] = style;
+    return style;
+}
+
+/**
  * 채팅 메시지 추가
  * @param {Object} messageData - 메시지 데이터
  */
@@ -124,15 +158,28 @@ function addChatMessage(messageData) {
             messageElement.classList.add('donation');
         }
         
+        var userStyle = getUserChatStyle(messageData.username || '익명');
+
+        // 뱃지와 유저이름을 담을 컨테이너
+        var userContainer = document.createElement('div');
+        userContainer.className = 'chat-user-container';
+
+        var badgeElement = document.createElement('span');
+        badgeElement.className = 'chat-badge';
+        badgeElement.textContent = userStyle.badge;
+        
         var usernameElement = document.createElement('div');
         usernameElement.className = 'chat-username';
         usernameElement.textContent = messageData.username || '익명';
+        usernameElement.style.color = userStyle.color;
         
         var contentElement = document.createElement('div');
         contentElement.className = 'chat-content';
         contentElement.textContent = messageData.message || '';
         
-        messageElement.appendChild(usernameElement);
+        userContainer.appendChild(badgeElement);
+        userContainer.appendChild(usernameElement);
+        messageElement.appendChild(userContainer);
         messageElement.appendChild(contentElement);
     }
     

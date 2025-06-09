@@ -582,35 +582,43 @@ h2 {
 }
 
 #chat-messages {
-    height: 100%;
+    padding: 1.5rem;
     overflow-y: auto;
-    padding: 0.5rem;
-    font-size: 1.6rem;
-    line-height: 1.4;
+    flex-grow: 1;
 }
 
 /* 채팅 메시지 스타일 */
 .chat-message {
-    margin-bottom: 0.8rem;
-    padding: 0.5rem;
-    border-radius: 0.4rem;
-    background-color: rgba(255, 255, 255, 0.05);
-    word-wrap: break-word;
+    margin-bottom: 1.5rem; /* 메시지 간 간격 */
+    line-height: 1.5;
+    font-size: 1.8rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-user-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.4rem; /* 유저 정보와 채팅 내용 사이 간격 */
+}
+
+.chat-badge {
+    font-size: 1.5rem; /* 이모지 크기 */
+    margin-right: 0.6rem;
+    line-height: 1; /* 이모지가 위로 뜨는 현상 방지 */
 }
 
 .chat-message .chat-username {
     font-weight: bold;
-    color: var(--highlight-green);
-    font-size: 1.4rem;
 }
 
 .chat-message .chat-content {
-    color: var(--text-color);
-    margin-top: 0.2rem;
+    word-break: break-all; /* 긴 영단어/URL 줄바꿈 */
+    padding-left: 0.2rem; /* 유저 이름과 시작점 맞춤 (미세조정) */
 }
 
 .chat-message.donation {
-    background-color: rgba(255, 215, 0, 0.1);
+    background-color: rgba(97, 255, 126, 0.1);
     border-left: 0.3rem solid #FFD700;
 }
 
