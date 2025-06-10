@@ -29,8 +29,11 @@ var WatchUIManager = (function() {
         if (!isoString) return "시작 시간 정보 없음";
         try {
             var date = new Date(isoString);
-            var hours = date.getHours().toString().padStart(2, '0');
-            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var hours = date.getHours().toString();
+            var minutes = date.getMinutes().toString();
+            // ES5 호환: padStart 대신 조건문 사용
+            if (hours.length === 1) hours = '0' + hours;
+            if (minutes.length === 1) minutes = '0' + minutes;
             return hours + ':' + minutes + ' 시작';
         } catch (error) {
             console.error("Error formatting start time:", error);

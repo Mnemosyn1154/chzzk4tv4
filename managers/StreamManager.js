@@ -60,9 +60,15 @@ var StreamManager = (function() {
         try {
             var playbackData = JSON.parse(jsonString);
             if (playbackData && playbackData.media && Array.isArray(playbackData.media)) {
-                var hlsStream = playbackData.media.find(function(m) {
-                    return m.protocol === 'HLS' || m.mediaFormat === 'HLS';
-                });
+                // ES5 호환: .find() 대신 for loop 사용
+                var hlsStream = null;
+                for (var i = 0; i < playbackData.media.length; i++) {
+                    var m = playbackData.media[i];
+                    if (m.protocol === 'HLS' || m.mediaFormat === 'HLS') {
+                        hlsStream = m;
+                        break;
+                    }
+                }
                 if (hlsStream && hlsStream.path) {
                     console.log("Extracted HLS URL:", hlsStream.path);
                     return hlsStream.path;
@@ -95,9 +101,15 @@ var StreamManager = (function() {
             streamUrl = getStreamUrlFromJson(playbackJson);
         } else if (typeof playbackJson === 'object' && playbackJson !== null) { 
              if (playbackJson.media && Array.isArray(playbackJson.media)) {
-                var hlsStream = playbackJson.media.find(function(m) {
-                    return m.protocol === 'HLS' || m.mediaFormat === 'HLS';
-                });
+                // ES5 호환: .find() 대신 for loop 사용
+                var hlsStream = null;
+                for (var j = 0; j < playbackJson.media.length; j++) {
+                    var m = playbackJson.media[j];
+                    if (m.protocol === 'HLS' || m.mediaFormat === 'HLS') {
+                        hlsStream = m;
+                        break;
+                    }
+                }
                  if (hlsStream && hlsStream.path) streamUrl = hlsStream.path;
              }
         }
