@@ -11,9 +11,7 @@ var WatchUIManager = (function() {
             thumbnail: document.getElementById('watch-channel-thumbnail'),
             title: document.getElementById('watch-title'),
             streamerName: document.getElementById('watch-streamer-name'),
-            category: document.getElementById('watch-category'),
-            viewerCount: document.getElementById('watch-viewer-count'),
-            description: document.getElementById('watch-description')
+            viewerCount: document.getElementById('watch-viewer-count')
         };
 
         if (!watchSectionElement) {
