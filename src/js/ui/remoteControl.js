@@ -1,7 +1,7 @@
 // 리모컨 키 처리 모듈 (ES5 호환)
 
-// 시청 화면 포커스 상태
-var watchScreenFocusIndex = -1; // -1: 포커스 없음, 0: 즐겨찾기 버튼, 1: 채팅 화살표
+// watchScreenFocusIndex는 이제 AppState.ui.watchScreenFocusIndex에서 관리
+// window.previousView는 이제 AppState.ui.previousView에서 관리
 
 /**
  * 시청 화면에서의 키 처리
@@ -68,21 +68,14 @@ function handleWatchScreenKeys(event) {
 function moveWatchScreenFocus(direction) {
     if (direction === 'right') {
         // 오른쪽 버튼: 채팅창 토글
-        if (window.ChatManager) {
-            if (window.ChatManager.isVisible && window.ChatManager.isVisible()) {
-                window.ChatManager.hidePanel();
-                console.log('채팅창 숨김');
-            } else {
-                window.ChatManager.showPanel();
-                console.log('채팅창 표시');
-            }
-        }
+        AppMediator.publish('chat:togglePanel');
+        console.log('채팅창 토글');
         return;
     }
     
     if (direction === 'left') {
         // 왼쪽 버튼: 즐겨찾기 버튼 포커스 항상 유지
-        watchScreenFocusIndex = 0;
+        AppState.ui.watchScreenFocusIndex = 0;
         forceFavoriteButtonFocus();
         console.log('즐겨찾기 포커스 설정 (왼쪽 버튼)');
         return;
@@ -93,22 +86,20 @@ function moveWatchScreenFocus(direction) {
  * 시청 화면에서 OK 버튼 처리
  */
 function handleWatchScreenOK() {
-    if (watchScreenFocusIndex === 0) {
+    if (AppState.ui.watchScreenFocusIndex === 0) {
         // 즐겨찾기 버튼에 포커스가 있으면 토글 실행
         var favoriteBtn = document.getElementById('watch-favorite-btn');
         if (favoriteBtn && typeof toggleWatchFavorite === 'function') {
             toggleWatchFavorite();
         }
-    } else if (watchScreenFocusIndex === 1) {
+    } else if (AppState.ui.watchScreenFocusIndex === 1) {
         // 채팅 화살표에 포커스가 있으면 채팅창 토글
-        if (window.ChatManager) {
-            window.ChatManager.togglePanel();
-            // 채팅창이 열렸으면 화살표 숨기기
-            window.ChatManager.setArrowFocus(false);
-            window.ChatManager.hideToggleArrow();
-            watchScreenFocusIndex = -1;
-            console.log('시청 화면: 채팅창 토글');
-        }
+        AppMediator.publish('chat:togglePanel');
+        // 채팅창이 열렸으면 화살표 숨기기
+        AppMediator.publish('chat:setArrowFocus', { focused: false });
+        AppMediator.publish('chat:hideToggleArrow');
+        AppState.ui.watchScreenFocusIndex = -1;
+        console.log('시청 화면: 채팅창 토글');
     } else {
         // 포커스가 없으면 정보 팝업 토글
         if (typeof showInfoPopup === 'function') {
@@ -128,7 +119,7 @@ function toggleWatchScreenFocus() {
  * 시청 화면 포커스 초기화
  */
 function clearWatchScreenFocus() {
-    watchScreenFocusIndex = -1;
+    AppState.ui.watchScreenFocusIndex = -1;
     clearAllWatchFocus();
 }
 
@@ -191,7 +182,7 @@ function restorePreviousView() {
     
     if (searchSection) searchSection.style.display = 'block';
     
-    if (window.previousView === 'search' && searchResultsContainer) {
+    if (AppState.ui.previousView === 'search' && searchResultsContainer) {
         searchResultsContainer.style.display = 'grid';
         if (liveStreamListContainer) liveStreamListContainer.style.display = 'none';
     } else if (liveStreamListContainer) {
@@ -199,9 +190,7 @@ function restorePreviousView() {
         if (searchResultsContainer) searchResultsContainer.style.display = 'none';
     } else {
         // fallback: 라이브 목록 다시 로드
-        if (window.SearchManager) {
-            window.SearchManager.showLiveList();
-        }
+        AppMediator.publish('search:showLiveList');
     }
 }
 
@@ -256,7 +245,7 @@ function handleInfoPopupToggle() {
             hideInfoPopup();
         }
         // 포커스는 즐겨찾기에 계속 유지
-        watchScreenFocusIndex = 0;
+        AppState.ui.watchScreenFocusIndex = 0;
         setTimeout(function() {
             forceFavoriteButtonFocus();
         }, 50);
@@ -266,7 +255,7 @@ function handleInfoPopupToggle() {
         if (typeof showInfoPopup === 'function') {
             showInfoPopup();
         }
-        watchScreenFocusIndex = 0;
+        AppState.ui.watchScreenFocusIndex = 0;
         // 팝업 표시 후 포커스 설정
         setTimeout(function() {
             forceFavoriteButtonFocus();
@@ -294,7 +283,7 @@ function handleInfoPopupClose() {
             hideInfoPopup();
         }
         // 포커스는 즐겨찾기에 계속 유지
-        watchScreenFocusIndex = 0;
+        AppState.ui.watchScreenFocusIndex = 0;
         forceFavoriteButtonFocus();
         console.log('방송정보 팝업 닫기 + 즐겨찾기 포커스 유지');
     } else {
@@ -308,8 +297,9 @@ function handleInfoPopupClose() {
  */
 function handleWatchScreenBack() {
     // 1순위: 채팅창이 열려있으면 채팅창 닫기
-    if (window.ChatManager && window.ChatManager.isVisible && window.ChatManager.isVisible()) {
-        window.ChatManager.hidePanel();
+    var isChatVisible = AppState.ui.isChatPanelVisible;
+    if (isChatVisible) {
+        AppMediator.publish('chat:hidePanel');
         console.log('뒤로가기: 채팅창 닫기');
         return;
     }
@@ -326,7 +316,7 @@ function handleWatchScreenBack() {
         if (typeof hideInfoPopup === 'function') {
             hideInfoPopup();
         }
-        watchScreenFocusIndex = -1;
+        AppState.ui.watchScreenFocusIndex = -1;
         clearAllWatchFocus();
         console.log('뒤로가기: 방송정보 팝업 닫기');
         return;
@@ -338,7 +328,7 @@ function handleWatchScreenBack() {
         hideWatchScreen();
         restorePreviousView();
         if (window.Navigation) {
-            Navigation.initializeFocus();
+            AppMediator.publish('navigation:initializeFocus');
         }
     }
     console.log('뒤로가기: 시청 화면 나가기');
@@ -387,9 +377,7 @@ function clearAllWatchFocus() {
     // setFavoriteButtonFocus(false);
     
     // 채팅창만 숨김
-    if (window.ChatManager) {
-        window.ChatManager.hidePanel();
-    }
+    AppMediator.publish('chat:hidePanel');
     
     console.log('채팅창 숨김 (즐겨찾기 포커스 유지)');
 }
@@ -405,7 +393,7 @@ function forceFavoriteButtonFocus() {
  * 시청 화면 초기 포커스 설정
  */
 function setInitialWatchFocus() {
-    watchScreenFocusIndex = 0;
+    AppState.ui.watchScreenFocusIndex = 0;
     forceFavoriteButtonFocus();
     console.log('시청 화면 초기 포커스 설정: 즐겨찾기 버튼');
 }

@@ -51,9 +51,7 @@ function createFavoriteStar(data) {
             
             // 라이브 목록 자동 새로고침 (즐겨찾기 순서 반영)
             setTimeout(function() {
-                if (window.SearchManager && window.SearchManager.refreshLiveList) {
-                    window.SearchManager.refreshLiveList();
-                }
+                AppMediator.publish('search:refreshLiveList');
             }, 100); // 100ms 지연으로 부드러운 전환
         }
     });
@@ -161,8 +159,8 @@ function createLiveCard(stream, container) {
     
     // 클릭/터치 이벤트 추가
     card.addEventListener('click', function() {
-        if (window.Navigation && window.Navigation.selectCard) {
-            window.Navigation.selectCard(card);
+        if (window.AppMediator) {
+            AppMediator.publish('navigation:selectCard', { card: card });
         }
     });
     
@@ -257,8 +255,8 @@ function createSearchResultCard(item, container) {
     
     // 클릭/터치 이벤트 추가
     card.addEventListener('click', function() {
-        if (window.Navigation && window.Navigation.selectCard) {
-            window.Navigation.selectCard(card);
+        if (window.AppMediator) {
+            AppMediator.publish('navigation:selectCard', { card: card });
         }
     });
     

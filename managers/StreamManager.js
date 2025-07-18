@@ -22,16 +22,12 @@ var StreamManager = (function() {
         
         chzzkPlayerElement.addEventListener('playing', function() {
             console.log("Player event: playing");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(false);
-            }
+            AppMediator.publish('player:statusChange', { isLoading: false });
         });
         
         chzzkPlayerElement.addEventListener('waiting', function() {
             console.log("Player event: waiting");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(true, '버퍼링 중...');
-            }
+            AppMediator.publish('player:statusChange', { isLoading: true, message: '버퍼링 중...' });
         });
         
         chzzkPlayerElement.addEventListener('pause', function() {
@@ -40,17 +36,13 @@ var StreamManager = (function() {
         
         chzzkPlayerElement.addEventListener('ended', function() {
             console.log("Player event: ended");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(false);
-            }
+            AppMediator.publish('player:statusChange', { isLoading: false });
         });
         
         chzzkPlayerElement.addEventListener('error', function(e) {
             console.error("Player event: error", e);
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(false);
-                window.PlayerStatusManager.showError('비디오 재생 오류가 발생했습니다');
-            }
+            AppMediator.publish('player:statusChange', { isLoading: false });
+            AppMediator.publish('player:statusChange', { isError: true, message: '비디오 재생 오류가 발생했습니다' });
         });
     }
     
@@ -85,10 +77,8 @@ var StreamManager = (function() {
     function initAndPlayStream(broadcastData) {
         if (!chzzkPlayerElement || !broadcastData) {
             console.error("Player element or broadcast data missing.");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(false);
-                window.PlayerStatusManager.showError('플레이어 초기화 오류');
-            }
+            AppMediator.publish('player:statusChange', { isLoading: false });
+            AppMediator.publish('player:statusChange', { isError: true, message: '플레이어 초기화 오류' });
             return;
         }
 
@@ -123,18 +113,14 @@ var StreamManager = (function() {
                 setupNativePlayback(streamUrl);
             } else {
                 console.error("HLS.js is not supported and native HLS playback also seems unsupported.");
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                    window.PlayerStatusManager.showError('이 기기에서는 HLS 재생이 지원되지 않습니다');
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
+                AppMediator.publish('player:statusChange', { isError: true, message: '이 기기에서는 HLS 재생이 지원되지 않습니다' });
                 return; 
             }
         } else {
             console.error("No stream URL found for playback.");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(false);
-                window.PlayerStatusManager.showError('방송 스트림을 찾을 수 없습니다');
-            }
+            AppMediator.publish('player:statusChange', { isLoading: false });
+            AppMediator.publish('player:statusChange', { isError: true, message: '방송 스트림을 찾을 수 없습니다' });
         }
     }
     
@@ -171,28 +157,20 @@ var StreamManager = (function() {
         
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
             console.log("HLS.js: Manifest parsed, attempting to play.");
-            if (window.PlayerStatusManager) {
-                window.PlayerStatusManager.showLoading(true, '재생 준비 중...');
-            }
+            AppMediator.publish('player:statusChange', { isLoading: true, message: '재생 준비 중...' });
             chzzkPlayerElement.play().then(function() {
                 console.log("Video playback started via HLS.js.");
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
             }).catch(function(error) {
                 console.error("Error playing video with HLS.js:", error);
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                    window.PlayerStatusManager.showError('스트림 재생을 시작할 수 없습니다');
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
+                AppMediator.publish('player:statusChange', { isError: true, message: '스트림 재생을 시작할 수 없습니다' });
             });
         });
         
         hlsInstance.on(Hls.Events.BUFFER_APPENDED, function() {
             if (chzzkPlayerElement && !chzzkPlayerElement.paused) {
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
             }
         });
         
@@ -203,9 +181,7 @@ var StreamManager = (function() {
                 switch(data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
                         console.log("HLS.js: 네트워크 오류 - 재시도 중...");
-                        if (window.PlayerStatusManager) {
-                            window.PlayerStatusManager.showError('네트워크 오류 - 재연결 중...');
-                        }
+                        AppMediator.publish('player:statusChange', { isError: true, message: '네트워크 오류 - 재연결 중...' });
                         setTimeout(function() {
                             if(hlsInstance) {
                                 hlsInstance.startLoad();
@@ -214,9 +190,7 @@ var StreamManager = (function() {
                         break;
                     case Hls.ErrorTypes.MEDIA_ERROR:
                         console.log("HLS.js: 미디어 오류 - 복구 시도 중...");
-                        if (window.PlayerStatusManager) {
-                            window.PlayerStatusManager.showError('미디어 오류 - 복구 중...');
-                        }
+                        AppMediator.publish('player:statusChange', { isError: true, message: '미디어 오류 - 복구 중...' });
                         setTimeout(function() {
                             if(hlsInstance) {
                                 hlsInstance.recoverMediaError();
@@ -225,9 +199,7 @@ var StreamManager = (function() {
                         break;
                     default:
                         console.error("HLS.js: 복구 불가능한 치명적 오류");
-                        if (window.PlayerStatusManager) {
-                            window.PlayerStatusManager.showError('재생 불가능 - 나중에 다시 시도해주세요');
-                        }
+                        AppMediator.publish('player:statusChange', { isError: true, message: '재생 불가능 - 나중에 다시 시도해주세요' });
                         if (hlsInstance) {
                             hlsInstance.destroy();
                             hlsInstance = null;
@@ -242,13 +214,9 @@ var StreamManager = (function() {
                 }
                 
                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                    if (window.PlayerStatusManager) {
-                        window.PlayerStatusManager.showLoading(true, '네트워크 재연결 중...');
-                    }
+                    AppMediator.publish('player:statusChange', { isLoading: true, message: '네트워크 재연결 중...' });
                     setTimeout(function() {
-                        if (window.PlayerStatusManager) {
-                            window.PlayerStatusManager.showLoading(false);
-                        }
+                        AppMediator.publish('player:statusChange', { isLoading: false });
                     }, 2000);
                 }
             }
@@ -260,15 +228,11 @@ var StreamManager = (function() {
         chzzkPlayerElement.addEventListener('loadedmetadata', function() {
              chzzkPlayerElement.play().then(function() {
                 console.log("Video playback started (native HLS).");
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
             }).catch(function(error) {
                 console.error("Error playing video (native HLS):", error);
-                if (window.PlayerStatusManager) {
-                    window.PlayerStatusManager.showLoading(false);
-                    window.PlayerStatusManager.showError('네이티브 HLS 재생 오류');
-                }
+                AppMediator.publish('player:statusChange', { isLoading: false });
+                AppMediator.publish('player:statusChange', { isError: true, message: '네이티브 HLS 재생 오류' });
             });
         });
          chzzkPlayerElement.load(); 
@@ -286,10 +250,8 @@ var StreamManager = (function() {
             chzzkPlayerElement.load(); 
             console.log("Video playback stopped and player reset.");
         }
-        if (window.PlayerStatusManager) {
-            window.PlayerStatusManager.showLoading(false);
-            window.PlayerStatusManager.hide();
-        }
+        AppMediator.publish('player:statusChange', { isLoading: false });
+        AppMediator.publish('player:statusChange', { hide: true });
     }
     
     return {

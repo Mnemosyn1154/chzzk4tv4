@@ -19,6 +19,23 @@ var WatchUIManager = (function() {
             return false;
         }
         
+        // AppMediator 이벤트 구독
+        if (window.AppMediator) {
+            AppMediator.subscribe('watchui:show', function() {
+                showWatchScreen();
+            });
+            
+            AppMediator.subscribe('watchui:populate', function(broadcastData) {
+                populateWatchInfo(broadcastData);
+            });
+            
+            AppMediator.subscribe('watchui:hide', function() {
+                hideWatchScreen();
+            });
+            
+            console.log("WatchUIManager: Subscribed to watchui events");
+        }
+        
         console.log("WatchUIManager initialized");
         return true;
     }

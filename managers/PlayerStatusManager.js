@@ -8,6 +8,23 @@ var PlayerStatusManager = (function() {
         if (!playerStatusOverlayElement) {
             console.warn("PlayerStatusManager: player-status-overlay element not found");
         }
+        
+        // AppMediator 이벤트 구독
+        if (window.AppMediator) {
+            AppMediator.subscribe('player:statusChange', function(data) {
+                if (!data) return;
+                
+                if (data.hide) {
+                    hide();
+                } else if (data.isError) {
+                    showError(data.message);
+                } else if (data.hasOwnProperty('isLoading')) {
+                    showLoading(data.isLoading, data.message);
+                }
+            });
+            console.log("PlayerStatusManager: Subscribed to player:statusChange event");
+        }
+        
         console.log("PlayerStatusManager initialized");
     }
     

@@ -1,9 +1,7 @@
 // 포커스 및 네비게이션 관리 모듈 (ES5 호환)
 
-// 포커스 관리 변수들
-var focusableElements = []; // 포커스 가능한 요소들
-var currentFocusIndex = 0;  // 현재 포커스된 요소의 인덱스
-var elementsPerRow = 4;     // 한 줄에 표시되는 카드 수
+// AppState를 사용하여 상태 관리
+// focusableElements, currentFocusIndex, elementsPerRow는 이제 AppState.ui에서 관리됨
 
 var SEARCH_INPUT_INDEX = 0;
 var SEARCH_BUTTON_INDEX = 1;
@@ -13,28 +11,28 @@ var CARDS_START_INDEX = 2;
  * 포커스 가능한 요소 목록 초기화
  */
 function initializeFocus() {
-    focusableElements = [];
+    AppState.ui.focusableElements = [];
     var searchInput = document.getElementById('search-keyword-input');
     var searchButton = document.getElementById('search-button');
     
     if (searchInput) {
-        focusableElements.push(searchInput);
+        AppState.ui.focusableElements.push(searchInput);
     }
     if (searchButton) {
-        focusableElements.push(searchButton);
+        AppState.ui.focusableElements.push(searchButton);
     }
     
     // 현재 활성 카드들 추가
-    focusableElements = focusableElements.concat(getActiveCards());
+    AppState.ui.focusableElements = AppState.ui.focusableElements.concat(getActiveCards());
     
-    elementsPerRow = Utils.getColumnCount();
+    AppState.ui.elementsPerRow = Utils.getColumnCount();
     
     // 앱 시작 시 첫 번째 카드에 포커스 (키보드 방지)
     var activeCards = getActiveCards();
     if (activeCards.length > 0) {
-        currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+        AppState.ui.currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
     } else {
-        currentFocusIndex = 0; // 카드가 없으면 검색창
+        AppState.ui.currentFocusIndex = 0; // 카드가 없으면 검색창
     }
     
     updateFocusableElements();
@@ -59,32 +57,32 @@ function getActiveCards() {
  */
 function updateFocusableElements() {
     var activeCards = getActiveCards();
-    focusableElements = [];
+    AppState.ui.focusableElements = [];
     
     var searchInput = document.getElementById('search-keyword-input');
     var searchButton = document.getElementById('search-button');
     
     if (searchInput) {
-        focusableElements.push(searchInput);
+        AppState.ui.focusableElements.push(searchInput);
     }
     if (searchButton) {
-        focusableElements.push(searchButton);
+        AppState.ui.focusableElements.push(searchButton);
     }
     
-    focusableElements = focusableElements.concat(activeCards);
+    AppState.ui.focusableElements = AppState.ui.focusableElements.concat(activeCards);
     
-    elementsPerRow = Utils.getColumnCount();
+    AppState.ui.elementsPerRow = Utils.getColumnCount();
     
     // 기존 포커스가 범위를 벗어났다면 적절한 위치로 이동
-    if (currentFocusIndex >= focusableElements.length) {
+    if (AppState.ui.currentFocusIndex >= AppState.ui.focusableElements.length) {
         if (activeCards.length > 0) {
-            currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+            AppState.ui.currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
         } else {
-            currentFocusIndex = 0; // 카드가 없으면 검색창
+            AppState.ui.currentFocusIndex = 0; // 카드가 없으면 검색창
         }
     }
     
-    setFocus(currentFocusIndex);
+    setFocus(AppState.ui.currentFocusIndex);
 }
 
 /**
@@ -92,10 +90,10 @@ function updateFocusableElements() {
  * @param {number} index - 포커스할 요소의 인덱스
  */
 function setFocus(index) {
-    if (focusableElements.length === 0) return;
+    if (AppState.ui.focusableElements.length === 0) return;
     
     // 이전 포커스 해제
-    var oldFocusedElement = focusableElements[currentFocusIndex];
+    var oldFocusedElement = AppState.ui.focusableElements[AppState.ui.currentFocusIndex];
     if (oldFocusedElement) {
         oldFocusedElement.classList.remove('focused');
         // 검색창에서 포커스가 벗어날 때 명시적으로 blur 처리
@@ -105,8 +103,8 @@ function setFocus(index) {
     }
     
     // 새로운 포커스 설정
-    currentFocusIndex = index;
-    var newFocusedElement = focusableElements[currentFocusIndex];
+    AppState.ui.currentFocusIndex = index;
+    var newFocusedElement = AppState.ui.focusableElements[AppState.ui.currentFocusIndex];
     if (newFocusedElement) {
         newFocusedElement.classList.add('focused');
         
@@ -126,31 +124,31 @@ function setFocus(index) {
  * @param {string} key - 입력된 키
  */
 function handleKeyDown(key) {
-    if (focusableElements.length === 0) {
+    if (AppState.ui.focusableElements.length === 0) {
         return;
     }
     
-    var currentElement = focusableElements[currentFocusIndex];
-    var newFocusIndex = currentFocusIndex;
+    var currentElement = AppState.ui.focusableElements[AppState.ui.currentFocusIndex];
+    var newFocusIndex = AppState.ui.currentFocusIndex;
     
     switch (key) {
         case 'ArrowDown':
-            if (currentFocusIndex >= CARDS_START_INDEX) {
+            if (AppState.ui.currentFocusIndex >= CARDS_START_INDEX) {
                 // 카드 영역에서 아래로 이동
-                newFocusIndex = Math.min(focusableElements.length - 1, 
-                                       currentFocusIndex + elementsPerRow);
-            } else if (currentFocusIndex === SEARCH_INPUT_INDEX && focusableElements.length > CARDS_START_INDEX) {
+                newFocusIndex = Math.min(AppState.ui.focusableElements.length - 1, 
+                                       AppState.ui.currentFocusIndex + AppState.ui.elementsPerRow);
+            } else if (AppState.ui.currentFocusIndex === SEARCH_INPUT_INDEX && AppState.ui.focusableElements.length > CARDS_START_INDEX) {
                 // 검색 입력창에서 첫 번째 카드로 이동
                 newFocusIndex = CARDS_START_INDEX;
-            } else if (currentFocusIndex === SEARCH_BUTTON_INDEX && focusableElements.length > CARDS_START_INDEX) {
+            } else if (AppState.ui.currentFocusIndex === SEARCH_BUTTON_INDEX && AppState.ui.focusableElements.length > CARDS_START_INDEX) {
                 // 검색 버튼에서 첫 번째 카드로 이동
                 newFocusIndex = CARDS_START_INDEX;
             }
             break;
             
         case 'ArrowUp':
-            if (currentFocusIndex >= CARDS_START_INDEX) {
-                var newIndex = currentFocusIndex - elementsPerRow;
+            if (AppState.ui.currentFocusIndex >= CARDS_START_INDEX) {
+                var newIndex = AppState.ui.currentFocusIndex - AppState.ui.elementsPerRow;
                 if (newIndex >= CARDS_START_INDEX) {
                     newFocusIndex = newIndex;
                 } else {
@@ -161,14 +159,14 @@ function handleKeyDown(key) {
             break;
             
         case 'ArrowLeft':
-            if (currentFocusIndex > 0) {
-                newFocusIndex = currentFocusIndex - 1;
+            if (AppState.ui.currentFocusIndex > 0) {
+                newFocusIndex = AppState.ui.currentFocusIndex - 1;
             }
             break;
             
         case 'ArrowRight':
-            if (currentFocusIndex < focusableElements.length - 1) {
-                newFocusIndex = currentFocusIndex + 1;
+            if (AppState.ui.currentFocusIndex < AppState.ui.focusableElements.length - 1) {
+                newFocusIndex = AppState.ui.currentFocusIndex + 1;
             }
             break;
             
@@ -219,7 +217,7 @@ function selectCard(cardElement) {
             ChzzkAPI.fetchFullLiveDetails(cardData).then(function(fullDetails) {
                 if (fullDetails && typeof showWatchScreen === 'function') {
                     console.log('검색 카드 -> 방송 화면 진입:', fullDetails);
-                    window.previousView = 'search';
+                    AppState.ui.previousView = 'search';
                     showWatchScreen(fullDetails);
                 } else {
                     console.log('라이브 상세 정보를 가져올 수 없습니다.');
@@ -235,7 +233,7 @@ function selectCard(cardElement) {
         ChzzkAPI.fetchFullLiveDetails(cardData).then(function(fullDetails) {
             if (fullDetails && typeof showWatchScreen === 'function') {
                 console.log('라이브 카드 -> 방송 화면 진입:', fullDetails);
-                window.previousView = 'live';
+                AppState.ui.previousView = 'live';
                 showWatchScreen(fullDetails);
             } else {
                 console.log('라이브 상세 정보를 가져올 수 없습니다.');
@@ -254,7 +252,7 @@ function selectCard(cardElement) {
  * OK 버튼 처리
  */
 function handleOKButton() {
-    var currentElement = focusableElements[currentFocusIndex];
+    var currentElement = AppState.ui.focusableElements[AppState.ui.currentFocusIndex];
     selectCard(currentElement);
 }
 
@@ -274,7 +272,7 @@ function handleBackButton() {
         }
         
         // 라이브 목록만 표시하도록 복원
-        SearchManager.showLiveList();
+        AppMediator.publish('search:showLiveList');
         initializeFocus();
     } else {
         // 기본 화면에서 앱 종료 시도
@@ -286,6 +284,29 @@ function handleBackButton() {
     }
 }
 
+// AppMediator 이벤트 구독 (DOMContentLoaded 이벤트에서 실행)
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.AppMediator) {
+        AppMediator.subscribe('navigation:initializeFocus', function() {
+            initializeFocus();
+        });
+        
+        AppMediator.subscribe('navigation:setFocus', function(data) {
+            if (data && typeof data.index === 'number') {
+                setFocus(data.index);
+            }
+        });
+        
+        AppMediator.subscribe('navigation:selectCard', function(data) {
+            if (data && data.card) {
+                selectCard(data.card);
+            }
+        });
+        
+        console.log("Navigation: Subscribed to navigation events");
+    }
+});
+
 // 모듈 내보내기
 window.Navigation = {
     initializeFocus: initializeFocus,
@@ -295,6 +316,6 @@ window.Navigation = {
     handleOKButton: handleOKButton,
     handleBackButton: handleBackButton,
     selectCard: selectCard,
-    getCurrentFocusIndex: function() { return currentFocusIndex; },
-    setCurrentFocusIndex: function(index) { currentFocusIndex = index; }
+    getCurrentFocusIndex: function() { return AppState.ui.currentFocusIndex; },
+    setCurrentFocusIndex: function(index) { AppState.ui.currentFocusIndex = index; }
 }; 

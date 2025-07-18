@@ -2,14 +2,23 @@
 
 var InfoPopupManager = (function() {
     var watchInfoPanelContainerElement = null;
-    var infoPopupTimer = null;
-    var isInfoPopupCurrentlyVisible = false;
+    // infoPopupTimer와 isInfoPopupCurrentlyVisible는 이제 AppState에서 관리
     
     function initialize() {
         watchInfoPanelContainerElement = document.getElementById('watch-info-panel');
         if (!watchInfoPanelContainerElement) {
             console.warn("InfoPopupManager: watch-info-panel element not found");
         }
+        
+        // AppMediator 이벤트 구독
+        AppMediator.subscribe('infopopup:show', function() {
+            showInfoPopup();
+        });
+        
+        AppMediator.subscribe('infopopup:hide', function() {
+            hideInfoPopup();
+        });
+        
         console.log("InfoPopupManager initialized");
     }
     
@@ -17,25 +26,28 @@ var InfoPopupManager = (function() {
         if (!watchInfoPanelContainerElement) return;
         
         // 이미 표시되어 있으면 타이머만 리셋
-        if (isInfoPopupCurrentlyVisible) {
+        if (AppState.ui.isInfoPopupVisible) {
             console.log('팝업 이미 표시됨 - 타이머만 리셋');
-            if (infoPopupTimer) {
-                clearTimeout(infoPopupTimer);
+            if (AppState.ui.infoPopupTimer) {
+                clearTimeout(AppState.ui.infoPopupTimer);
             }
-            infoPopupTimer = setTimeout(function() {
+            AppState.ui.infoPopupTimer = setTimeout(function() {
                 hideInfoPopup();
             }, 4000);
             return;
         }
         
         watchInfoPanelContainerElement.classList.add('visible');
-        isInfoPopupCurrentlyVisible = true;
+        AppState.ui.isInfoPopupVisible = true;
         
-        if (infoPopupTimer) {
-            clearTimeout(infoPopupTimer);
+        // 가시성 변경 이벤트 발행
+        AppMediator.publish('infopopup:visibilityChanged', { visible: true });
+        
+        if (AppState.ui.infoPopupTimer) {
+            clearTimeout(AppState.ui.infoPopupTimer);
         }
         
-        infoPopupTimer = setTimeout(function() {
+        AppState.ui.infoPopupTimer = setTimeout(function() {
             hideInfoPopup();
         }, 4000);
         
@@ -46,31 +58,34 @@ var InfoPopupManager = (function() {
         if (!watchInfoPanelContainerElement) return;
         
         // 이미 숨겨져 있으면 중복 처리 방지
-        if (!isInfoPopupCurrentlyVisible) {
+        if (!AppState.ui.isInfoPopupVisible) {
             console.log('팝업 이미 숨김 상태');
             return;
         }
         
         watchInfoPanelContainerElement.classList.remove('visible');
-        isInfoPopupCurrentlyVisible = false;
+        AppState.ui.isInfoPopupVisible = false;
         
-        if (infoPopupTimer) {
-            clearTimeout(infoPopupTimer);
-            infoPopupTimer = null;
+        // 가시성 변경 이벤트 발행
+        AppMediator.publish('infopopup:visibilityChanged', { visible: false });
+        
+        if (AppState.ui.infoPopupTimer) {
+            clearTimeout(AppState.ui.infoPopupTimer);
+            AppState.ui.infoPopupTimer = null;
         }
         
         console.log('팝업 숨김');
     }
     
     function isPopupVisible() {
-        return isInfoPopupCurrentlyVisible;
+        return AppState.ui.isInfoPopupVisible;
     }
     
     function cleanup() {
         hideInfoPopup();
-        if (infoPopupTimer) {
-            clearTimeout(infoPopupTimer);
-            infoPopupTimer = null;
+        if (AppState.ui.infoPopupTimer) {
+            clearTimeout(AppState.ui.infoPopupTimer);
+            AppState.ui.infoPopupTimer = null;
         }
     }
     

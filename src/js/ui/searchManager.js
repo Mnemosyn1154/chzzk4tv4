@@ -108,7 +108,7 @@ function showLiveList() {
         
         // 카드 목록이 변경되었으므로 포커스 시스템 업데이트
         if (window.Navigation) {
-            Navigation.initializeFocus();
+            AppMediator.publish('navigation:initializeFocus');
         }
     }).catch(function(error) {
         console.error('라이브 목록 로드 실패:', error);
@@ -138,9 +138,9 @@ function showSearchResults(keyword) {
             
             // 검색 결과가 로드된 후 첫 번째 카드로 포커스 이동
             if (window.Navigation) {
-                Navigation.initializeFocus();
+                AppMediator.publish('navigation:initializeFocus');
                 // 첫 번째 검색 결과 카드로 포커스 설정 (인덱스 2: 검색창=0, 검색버튼=1, 첫번째카드=2)
-                Navigation.setFocus(2);
+                AppMediator.publish('navigation:setFocus', { index: 2 });
             }
         } else {
             searchResultsContainer.innerHTML = '<p>검색 결과가 없습니다.</p>';
@@ -189,6 +189,19 @@ function initializeSearch() {
                     showLiveList();
                 }
             }
+        });
+    }
+    
+    // AppMediator 이벤트 구독
+    if (window.AppMediator) {
+        // 라이브 목록 표시 이벤트
+        AppMediator.subscribe('search:showLiveList', function() {
+            showLiveList();
+        });
+        
+        // 라이브 목록 새로고침 이벤트
+        AppMediator.subscribe('search:refreshLiveList', function() {
+            refreshLiveList();
         });
     }
 }

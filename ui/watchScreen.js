@@ -1,87 +1,25 @@
 // ui/watchScreen.js (ES5 호환) - 리팩토링된 통합 인터페이스
 
-// 현재 시청 중인 방송 데이터
-var currentWatchData = null;
-
-// DOMContentLoaded 시점에 주요 요소들 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("WatchScreen: Starting manager initialization");
-    
-    // 매니저들 초기화 (의존성 순서대로)
-    var initResults = {
-        playerStatus: false,
-        stream: false,
-        infoPopup: false,
-        watchUI: false,
-        watchFavorite: false
-    };
-    
-    // 1. PlayerStatusManager 초기화
-    if (window.PlayerStatusManager) {
-        window.PlayerStatusManager.initialize();
-        initResults.playerStatus = true;
-    }
-    
-    // 2. StreamManager 초기화 (PlayerStatusManager에 의존)
-    if (window.StreamManager) {
-        initResults.stream = window.StreamManager.initialize();
-    }
-    
-    // 3. InfoPopupManager 초기화
-    if (window.InfoPopupManager) {
-        window.InfoPopupManager.initialize();
-        initResults.infoPopup = true;
-    }
-    
-    // 4. WatchUIManager 초기화
-    if (window.WatchUIManager) {
-        initResults.watchUI = window.WatchUIManager.initialize();
-    }
-    
-    // 5. WatchFavoriteManager 초기화
-    if (window.WatchFavoriteManager) {
-        window.WatchFavoriteManager.initialize();
-        initResults.watchFavorite = true;
-    }
-    
-    // 6. 기존 ChatManager 초기화
-    if (window.ChatManager) {
-        window.ChatManager.initialize();
-    }
-    
-         console.log("WatchScreen: Manager initialization results:", initResults);
-     
-     // 핵심 매니저들이 초기화되지 않으면 경고
-     if (!initResults.stream || !initResults.watchUI) {
-         console.error("WatchScreen: Critical managers failed to initialize!");
-     }
-});
+// currentWatchData는 이제 AppState.player.currentWatchData에서 관리
+// 모든 매니저 초기화는 App.js에서 수행됨
 
 function showWatchScreen(broadcastData) {
     var startTime = Date.now();
     console.log("Showing watch screen with data:", broadcastData);
 
     // 현재 방송 데이터 저장
-    currentWatchData = broadcastData;
+    AppState.player.currentWatchData = broadcastData;
 
     // WatchFavoriteManager에 데이터 설정
     if (window.WatchFavoriteManager) {
         window.WatchFavoriteManager.setCurrentWatchData(broadcastData);
     }
 
-    // 1. UI 표시 (WatchUIManager)
-    if (window.WatchUIManager) {
-        if (!window.WatchUIManager.showWatchScreen()) {
-            console.error("Failed to show watch screen UI");
-            return;
-        }
-        
-        // 정보 표시
-        window.WatchUIManager.populateWatchInfo(broadcastData);
-    } else {
-        console.error("WatchUIManager not available");
-        return;
-    }
+    // 1. UI 표시 (AppMediator event)
+    AppMediator.publish('watchui:show');
+    
+    // 정보 표시
+    AppMediator.publish('watchui:populate', broadcastData);
 
     // 2. 즐겨찾기 버튼 초기화 및 상태 설정
     if (window.WatchFavoriteManager) {
@@ -90,9 +28,7 @@ function showWatchScreen(broadcastData) {
     }
 
     // 3. 채팅 UI 초기화
-    if (window.ChatManager) {
-        window.ChatManager.initializeWatch();
-    }
+    AppMediator.publish('chat:initializeWatch');
 
     // 4. 플레이어 로딩 표시
     if (window.PlayerStatusManager) {
@@ -115,7 +51,7 @@ function showWatchScreen(broadcastData) {
 
     // 채팅 연결 시작
     var chatChannelId = broadcastData.chatChannelId;
-    if (window.ChatManager && chatChannelId) {
+    if (chatChannelId) {
         console.log("Found chatChannelId. Attempting to start chat: " + chatChannelId);
         
         ChzzkAPI.fetchChatAccessToken(chatChannelId).then(function(accessToken) {
@@ -125,7 +61,7 @@ function showWatchScreen(broadcastData) {
                     chatChannelId: chatChannelId,
                     accessToken: accessToken
                 };
-                window.ChatManager.startWatch(chatDetails);
+                AppMediator.publish('chat:startWatch', chatDetails);
             } else {
                 console.error("Failed to get chat accessToken. Chat will not be available.");
             }
@@ -138,9 +74,8 @@ function showWatchScreen(broadcastData) {
 
     // 6. 정보 팝업 표시 및 포커스 설정
     setTimeout(function() {
-        if (window.InfoPopupManager) {
-            window.InfoPopupManager.showInfoPopup();
-        }
+        // 정보 팝업 표시 이벤트 발행
+        AppMediator.publish('infopopup:show');
         
         // 즐겨찾기 버튼에 초기 포커스 설정
         setTimeout(function() {
@@ -166,15 +101,12 @@ function hideWatchScreen() {
     }
     
     // 2. 정보 팝업 숨김
-    if (window.InfoPopupManager) {
-        window.InfoPopupManager.cleanup();
-    }
+    // 정보 팝업 정리
+    AppMediator.publish('infopopup:hide');
     
     // 3. 채팅 연결 해제
-    if (window.ChatManager) {
-        window.ChatManager.disconnect();
-        window.ChatManager.hidePanel();
-    }
+    AppMediator.publish('chat:disconnect');
+    AppMediator.publish('chat:hidePanel');
     
     // 4. 즐겨찾기 매니저 정리
     if (window.WatchFavoriteManager) {
@@ -182,18 +114,14 @@ function hideWatchScreen() {
     }
     
     // 5. UI 숨김
-    if (window.WatchUIManager) {
-        window.WatchUIManager.hideWatchScreen();
-    }
+    AppMediator.publish('watchui:hide');
     
     // 6. 즐겨찾기 변경사항 반영을 위해 라이브 목록 새로고침
-    if (window.SearchManager && window.SearchManager.refreshLiveList) {
-        console.log("Refreshing live list to reflect favorite changes");
-        window.SearchManager.refreshLiveList();
-    }
+    console.log("Refreshing live list to reflect favorite changes");
+    AppMediator.publish('search:refreshLiveList');
     
     // 현재 시청 데이터 초기화
-    currentWatchData = null;
+    AppState.player.currentWatchData = null;
 }
 
 // 레거시 호환성을 위한 전역 함수들 (필요한 경우)
@@ -210,22 +138,16 @@ function showPlayerError(errorMessage) {
 }
 
 function showInfoPopup() {
-    if (window.InfoPopupManager) {
-        window.InfoPopupManager.showInfoPopup();
-    }
+    AppMediator.publish('infopopup:show');
 }
 
 function hideInfoPopup() {
-    if (window.InfoPopupManager) {
-        window.InfoPopupManager.hideInfoPopup();
-    }
+    AppMediator.publish('infopopup:hide');
 }
 
 function isInfoPopupVisible() {
-    if (window.InfoPopupManager) {
-        return window.InfoPopupManager.isPopupVisible();
-    }
-    return false;
+    // AppState에서 직접 상태 확인
+    return AppState.ui.isInfoPopupVisible;
 }
 
 function toggleWatchFavorite() {
@@ -240,4 +162,4 @@ function toggleWatchFavorite() {
 window.isInfoPopupVisible = isInfoPopupVisible;
 window.showInfoPopup = showInfoPopup;
 window.hideInfoPopup = hideInfoPopup;
-window.toggleWatchFavorite = toggleWatchFavorite; 
+window.toggleWatchFavorite = toggleWatchFavorite;

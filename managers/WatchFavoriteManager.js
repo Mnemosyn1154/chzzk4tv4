@@ -2,14 +2,14 @@
 
 var WatchFavoriteManager = (function() {
     var watchFavoriteButton = null;
-    var currentWatchData = null;
+    // currentWatchData는 이제 AppState.player.currentWatchData를 사용
     
     function initialize() {
         console.log("WatchFavoriteManager initialized");
     }
     
     function setCurrentWatchData(data) {
-        currentWatchData = data;
+        AppState.player.currentWatchData = data;
     }
     
     /**
@@ -52,29 +52,29 @@ var WatchFavoriteManager = (function() {
      * 시청 화면에서 즐겨찾기 토글
      */
     function toggleFavorite() {
-        if (!currentWatchData || !window.FavoriteManager) {
+        if (!AppState.player.currentWatchData || !window.FavoriteManager) {
             console.error('즐겨찾기 토글 실패: 데이터 없음');
             return;
         }
         
         // 채널 ID 추출
         var channelId = null;
-        if (currentWatchData.channel && currentWatchData.channel.channelId) {
-            channelId = currentWatchData.channel.channelId;
-        } else if (currentWatchData.channelId) {
-            channelId = currentWatchData.channelId;
+        if (AppState.player.currentWatchData.channel && AppState.player.currentWatchData.channel.channelId) {
+            channelId = AppState.player.currentWatchData.channel.channelId;
+        } else if (AppState.player.currentWatchData.channelId) {
+            channelId = AppState.player.currentWatchData.channelId;
         }
         
         if (!channelId) {
-            console.error('채널 ID를 찾을 수 없습니다:', currentWatchData);
+            console.error('채널 ID를 찾을 수 없습니다:', AppState.player.currentWatchData);
             return;
         }
         
         // 채널 데이터 준비
         var channelData = {
             channelId: channelId,
-            channelName: currentWatchData.channel ? currentWatchData.channel.channelName : currentWatchData.channelName,
-            channelImageUrl: currentWatchData.channel ? currentWatchData.channel.channelImageUrl : currentWatchData.channelImageUrl
+            channelName: AppState.player.currentWatchData.channel ? AppState.player.currentWatchData.channel.channelName : AppState.player.currentWatchData.channelName,
+            channelImageUrl: AppState.player.currentWatchData.channel ? AppState.player.currentWatchData.channel.channelImageUrl : AppState.player.currentWatchData.channelImageUrl
         };
         
         // 즐겨찾기 토글
@@ -131,7 +131,7 @@ var WatchFavoriteManager = (function() {
     }
     
     function cleanup() {
-        currentWatchData = null;
+        AppState.player.currentWatchData = null;
         watchFavoriteButton = null;
     }
     
