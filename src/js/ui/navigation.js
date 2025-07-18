@@ -11,31 +11,58 @@ var CARDS_START_INDEX = 2;
  * 포커스 가능한 요소 목록 초기화
  */
 function initializeFocus() {
-    AppState.ui.focusableElements = [];
-    var searchInput = document.getElementById('search-keyword-input');
-    var searchButton = document.getElementById('search-button');
+    console.log("[Navigation] Initializing focus...");
     
-    if (searchInput) {
-        AppState.ui.focusableElements.push(searchInput);
-    }
-    if (searchButton) {
-        AppState.ui.focusableElements.push(searchButton);
-    }
-    
-    // 현재 활성 카드들 추가
-    AppState.ui.focusableElements = AppState.ui.focusableElements.concat(getActiveCards());
-    
-    AppState.ui.elementsPerRow = Utils.getColumnCount();
-    
-    // 앱 시작 시 첫 번째 카드에 포커스 (키보드 방지)
-    var activeCards = getActiveCards();
-    if (activeCards.length > 0) {
-        AppState.ui.currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+    // TV 환경에서 초기화 지연
+    if (window.isWebOSTV) {
+        console.log("[TV Debug] Delaying navigation init for TV");
+        setTimeout(function() {
+            doInitializeFocus();
+        }, 100);
     } else {
-        AppState.ui.currentFocusIndex = 0; // 카드가 없으면 검색창
+        doInitializeFocus();
     }
-    
-    updateFocusableElements();
+}
+
+function doInitializeFocus() {
+    try {
+        AppState.ui.focusableElements = [];
+        var searchInput = document.getElementById('search-keyword-input');
+        var searchButton = document.getElementById('search-button');
+        
+        if (searchInput) {
+            AppState.ui.focusableElements.push(searchInput);
+        }
+        if (searchButton) {
+            AppState.ui.focusableElements.push(searchButton);
+        }
+        
+        // 현재 활성 카드들 추가
+        var activeCards = getActiveCards();
+        AppState.ui.focusableElements = AppState.ui.focusableElements.concat(activeCards);
+        
+        // 컬럼 수 계산 (에러 처리 포함)
+        try {
+            AppState.ui.elementsPerRow = Utils.getColumnCount();
+        } catch (e) {
+            console.error("[Navigation] Column count error, using default:", e);
+            AppState.ui.elementsPerRow = 4;
+        }
+        
+        console.log("[Navigation] Elements per row:", AppState.ui.elementsPerRow);
+        console.log("[Navigation] Total focusable elements:", AppState.ui.focusableElements.length);
+        
+        // 앱 시작 시 첫 번째 카드에 포커스 (키보드 방지)
+        if (activeCards.length > 0) {
+            AppState.ui.currentFocusIndex = CARDS_START_INDEX; // 첫 번째 카드
+        } else {
+            AppState.ui.currentFocusIndex = 0; // 카드가 없으면 검색창
+        }
+        
+        updateFocusableElements();
+    } catch (e) {
+        console.error("[Navigation] Critical error in initializeFocus:", e);
+    }
 }
 
 function getActiveCards() {
@@ -43,10 +70,25 @@ function getActiveCards() {
     var searchContainer = document.getElementById('search-results-container');
     var activeCards = [];
     
-    if (searchContainer && searchContainer.style.display === 'grid' && searchContainer.querySelectorAll('.live-card').length > 0) {
-        activeCards = Array.prototype.slice.call(searchContainer.querySelectorAll('.live-card'));
-    } else if (liveContainer && liveContainer.style.display !== 'none' && liveContainer.querySelectorAll('.live-card').length > 0) {
-        activeCards = Array.prototype.slice.call(liveContainer.querySelectorAll('.live-card'));
+    try {
+        // display 속성 체크 개선 (flexbox/grid 모두 지원)
+        var isSearchActive = searchContainer && 
+            searchContainer.style.display !== 'none' && 
+            searchContainer.querySelectorAll('.live-card').length > 0;
+            
+        var isLiveActive = liveContainer && 
+            liveContainer.style.display !== 'none' && 
+            liveContainer.querySelectorAll('.live-card').length > 0;
+        
+        if (isSearchActive) {
+            activeCards = Array.prototype.slice.call(searchContainer.querySelectorAll('.live-card'));
+            console.log("[Navigation] Active cards from search:", activeCards.length);
+        } else if (isLiveActive) {
+            activeCards = Array.prototype.slice.call(liveContainer.querySelectorAll('.live-card'));
+            console.log("[Navigation] Active cards from live:", activeCards.length);
+        }
+    } catch (e) {
+        console.error("[Navigation] Error getting active cards:", e);
     }
     
     return activeCards;

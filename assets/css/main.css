@@ -13,6 +13,11 @@ html {
 
 /* Main CSS for Chzzk4LGTV4 */ 
 
+/* 전역 box-sizing 설정 - TV 호환성을 위해 필수 */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: sans-serif;
     margin: 0;
@@ -100,20 +105,55 @@ h2 {
     margin: 3rem 0; /* 30px -> 3rem */
 }
 
+/* Flexbox 기본 레이아웃 - TV 호환성 */
 #search-results-container,
 #live-stream-list-container {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 2rem;        /* 20px -> 2rem */
     margin-top: 2rem; /* 20px -> 2rem */
 }
 
+/* 라이브 리스트 - 4열 레이아웃 */
 #live-stream-list-container {
-    grid-template-columns: repeat(4, 1fr); /* 기존 스타일 유지 */
+    gap: 2rem;
 }
 
+#live-stream-list-container .live-card {
+    flex: 0 0 calc(25% - 1.5rem); /* 4열 레이아웃 */
+    max-width: calc(25% - 1.5rem);
+}
+
+/* 검색 결과 - 6열 레이아웃 */  
 #search-results-container {
-    grid-template-columns: repeat(6, 1fr); /* 카드를 더 작게, 한 줄에 6개 */
-    gap: 1.5rem; /* 카드 간 간격 약간 줄임 */
+    gap: 1.5rem;
+}
+
+#search-results-container .live-card {
+    flex: 0 0 calc(16.666% - 1.25rem); /* 6열 레이아웃 */
+    max-width: calc(16.666% - 1.25rem);
+}
+
+/* Grid를 지원하는 경우에만 Grid 사용 */
+@supports (display: grid) {
+    #search-results-container,
+    #live-stream-list-container {
+        display: grid;
+    }
+    
+    #live-stream-list-container {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    #search-results-container {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    #live-stream-list-container .live-card,
+    #search-results-container .live-card {
+        flex: none;
+        max-width: none;
+    }
 }
 
 .live-card {
@@ -628,4 +668,40 @@ h2 {
     font-style: italic;
     text-align: center;
     font-size: 1.3rem;
+}
+
+/* TV 전용 안정성 개선 */
+@media screen and (device-type: tv), screen and (max-device-width: 3840px) {
+    /* 렌더링 안정성을 위한 하드웨어 가속 */
+    .live-card {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        will-change: transform;
+    }
+    
+    /* 이미지 렌더링 최적화 */
+    .live-card-thumbnail,
+    .placeholder-thumbnail {
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+    
+    /* 폰트 렌더링 개선 */
+    body {
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+    
+    /* 컨테이너 최대 너비 제한 */
+    #app {
+        max-width: 1920px;
+        margin: 0 auto;
+    }
+}
+
+/* WebOS TV 특화 스타일 */
+.webos-tv #live-stream-list-container,
+.webos-tv #search-results-container {
+    /* 강제 리플로우를 위한 최소 높이 */
+    min-height: 1px;
 } 

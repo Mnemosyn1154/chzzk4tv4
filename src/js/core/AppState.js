@@ -12,8 +12,8 @@ var AppState = {
         // 포커스 가능한 요소들의 배열
         focusableElements: [],
         
-        // 한 줄에 표시되는 요소의 개수
-        elementsPerRow: 5,
+        // 한 줄에 표시되는 요소의 개수 (라이브 목록 기본값)
+        elementsPerRow: 4,
         
         // 시청 화면에서의 포커스 인덱스 (-1: 없음, 0: 즐겨찾기 버튼, 1: 채팅 화살표)
         watchScreenFocusIndex: -1,

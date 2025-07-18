@@ -16,12 +16,22 @@ var PlayerStatusManager = (function() {
     function showLoading(isLoading, message) {
         if (!playerStatusOverlayElement) return;
         
+        console.log('[PlayerStatus] showLoading called:', isLoading, message);
+        
+        // 파라미터 타입 확인
+        if (typeof isLoading !== 'boolean') {
+            console.warn('[PlayerStatus] Invalid isLoading parameter:', isLoading);
+            isLoading = Boolean(isLoading);
+        }
+        
         if (isLoading) {
             var loadingMessage = message || '스트림 연결 중...';
             playerStatusOverlayElement.textContent = loadingMessage;
             playerStatusOverlayElement.style.display = 'block';
+            console.log('[PlayerStatus] Showing loading message:', loadingMessage);
         } else {
             playerStatusOverlayElement.style.display = 'none';
+            console.log('[PlayerStatus] Hiding loading overlay');
         }
     }
     

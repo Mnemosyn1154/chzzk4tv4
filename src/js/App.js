@@ -12,6 +12,9 @@ var App = {
         console.log("Chzzk4LGTV4 App Starting...");
         console.log("======================================");
         
+        // TV 환경 감지
+        this.detectTVEnvironment();
+        
         // 1. 모든 필수 모듈이 로드되었는지 확인
         if (!this.checkRequiredModules()) {
             console.error('Critical: Required modules are not loaded!');
@@ -30,8 +33,18 @@ var App = {
         // 5. UI 모듈들 초기화
         this.initializeUIModules();
         
-        // 6. 초기 화면 표시
-        this.showInitialView();
+        // 6. TV 환경인 경우 추가 대기 시간
+        var self = this;
+        if (window.isWebOSTV) {
+            console.log("[TV] Delaying initial view for TV rendering...");
+            setTimeout(function() {
+                self.showInitialView();
+                // 강제 리플로우
+                self.forceReflow();
+            }, 300);
+        } else {
+            this.showInitialView();
+        }
         
         console.log("======================================");
         console.log("App initialization complete!");
@@ -274,13 +287,16 @@ var App = {
         AppMediator.subscribe('player:statusChange', function(data) {
             if (!window.PlayerStatusManager || !data) return;
             
+            console.log('[Player Status] Event received:', data);
+            
             if (data.hide) {
                 window.PlayerStatusManager.hide();
             } else if (data.isError) {
                 window.PlayerStatusManager.showError(data.message || '알 수 없는 오류');
-            } else if (data.isLoading) {
+            } else if (data.hasOwnProperty('isLoading')) {
+                // isLoading이 명시적으로 false일 때도 처리
                 window.PlayerStatusManager.showLoading(
-                    data.showSpinner !== false,
+                    data.isLoading,
                     data.message || '로딩 중...'
                 );
             }
@@ -319,6 +335,51 @@ var App = {
         });
         
         console.log("✓ All events bound successfully");
+    },
+    
+    /**
+     * TV 환경 감지 및 설정
+     */
+    detectTVEnvironment: function() {
+        window.isWebOSTV = typeof webOS !== 'undefined';
+        
+        if (window.isWebOSTV) {
+            // body에 클래스 추가 (CSS 선택자용)
+            document.body.classList.add('webos-tv');
+            
+            console.log("[TV Debug] WebOS TV detected");
+            console.log("[TV Debug] Screen size:", screen.width, "x", screen.height);
+            console.log("[TV Debug] Window size:", window.innerWidth, "x", window.innerHeight);
+            console.log("[TV Debug] Device pixel ratio:", window.devicePixelRatio || 1);
+            
+            // WebOS 디바이스 정보 가져오기
+            if (webOS.deviceInfo) {
+                webOS.deviceInfo(function(device) {
+                    console.log("[TV Debug] Device info:", device);
+                });
+            }
+        }
+    },
+    
+    /**
+     * 강제 리플로우 - TV 렌더링 문제 해결
+     */
+    forceReflow: function() {
+        var containers = [
+            document.getElementById('live-stream-list-container'),
+            document.getElementById('search-results-container')
+        ];
+        
+        for (var i = 0; i < containers.length; i++) {
+            if (containers[i]) {
+                // 강제 리플로우 트리거
+                containers[i].style.display = 'none';
+                containers[i].offsetHeight; // 리플로우 강제
+                containers[i].style.display = '';
+                
+                console.log("[TV Debug] Forced reflow for:", containers[i].id);
+            }
+        }
     },
     
     /**
