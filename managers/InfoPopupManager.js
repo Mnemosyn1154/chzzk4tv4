@@ -10,14 +10,6 @@ var InfoPopupManager = (function() {
             console.warn("InfoPopupManager: watch-info-panel element not found");
         }
         
-        // AppMediator 이벤트 구독
-        AppMediator.subscribe('infopopup:show', function() {
-            showInfoPopup();
-        });
-        
-        AppMediator.subscribe('infopopup:hide', function() {
-            hideInfoPopup();
-        });
         
         console.log("InfoPopupManager initialized");
     }

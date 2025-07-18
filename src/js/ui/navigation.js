@@ -284,38 +284,16 @@ function handleBackButton() {
     }
 }
 
-// AppMediator 이벤트 구독 (DOMContentLoaded 이벤트에서 실행)
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.AppMediator) {
-        AppMediator.subscribe('navigation:initializeFocus', function() {
-            initializeFocus();
-        });
-        
-        AppMediator.subscribe('navigation:setFocus', function(data) {
-            if (data && typeof data.index === 'number') {
-                setFocus(data.index);
-            }
-        });
-        
-        AppMediator.subscribe('navigation:selectCard', function(data) {
-            if (data && data.card) {
-                selectCard(data.card);
-            }
-        });
-        
-        console.log("Navigation: Subscribed to navigation events");
-    }
-});
 
 // 모듈 내보내기
 window.Navigation = {
     initializeFocus: initializeFocus,
     updateFocusableElements: updateFocusableElements,
     setFocus: setFocus,
+    selectCard: selectCard,
     handleKeyDown: handleKeyDown,
     handleOKButton: handleOKButton,
     handleBackButton: handleBackButton,
-    selectCard: selectCard,
     getCurrentFocusIndex: function() { return AppState.ui.currentFocusIndex; },
     setCurrentFocusIndex: function(index) { AppState.ui.currentFocusIndex = index; }
 }; 

@@ -89,8 +89,8 @@ function handleWatchScreenOK() {
     if (AppState.ui.watchScreenFocusIndex === 0) {
         // 즐겨찾기 버튼에 포커스가 있으면 토글 실행
         var favoriteBtn = document.getElementById('watch-favorite-btn');
-        if (favoriteBtn && typeof toggleWatchFavorite === 'function') {
-            toggleWatchFavorite();
+        if (favoriteBtn && window.WatchFavoriteManager && window.WatchFavoriteManager.toggleFavorite) {
+            window.WatchFavoriteManager.toggleFavorite();
         }
     } else if (AppState.ui.watchScreenFocusIndex === 1) {
         // 채팅 화살표에 포커스가 있으면 채팅창 토글
@@ -102,9 +102,7 @@ function handleWatchScreenOK() {
         console.log('시청 화면: 채팅창 토글');
     } else {
         // 포커스가 없으면 정보 팝업 토글
-        if (typeof showInfoPopup === 'function') {
-            showInfoPopup();
-        }
+        AppMediator.publish('infopopup:show');
     }
 }
 
@@ -231,19 +229,13 @@ function handleInfoPopupToggle() {
     var isVisible = false;
     
     // 현재 팝업 상태 확인
-    if (typeof isInfoPopupVisible === 'function') {
-        isVisible = isInfoPopupVisible();
-    } else if (window.isInfoPopupVisible !== undefined) {
-        isVisible = window.isInfoPopupVisible;
-    }
+    isVisible = AppState.ui.isInfoPopupVisible;
     
     console.log('팝업 토글 - 현재 상태:', isVisible);
     
     if (isVisible) {
         // 팝업이 보이면 숨기기 + 포커스 유지
-        if (typeof hideInfoPopup === 'function') {
-            hideInfoPopup();
-        }
+        AppMediator.publish('infopopup:hide');
         // 포커스는 즐겨찾기에 계속 유지
         AppState.ui.watchScreenFocusIndex = 0;
         setTimeout(function() {
@@ -252,9 +244,7 @@ function handleInfoPopupToggle() {
         console.log('방송정보 팝업 숨김 + 즐겨찾기 포커스 유지');
     } else {
         // 팝업이 안 보이면 표시 + 즐겨찾기 강제 포커스
-        if (typeof showInfoPopup === 'function') {
-            showInfoPopup();
-        }
+        AppMediator.publish('infopopup:show');
         AppState.ui.watchScreenFocusIndex = 0;
         // 팝업 표시 후 포커스 설정
         setTimeout(function() {
@@ -271,17 +261,11 @@ function handleInfoPopupClose() {
     var isVisible = false;
     
     // 현재 팝업 상태 확인
-    if (typeof isInfoPopupVisible === 'function') {
-        isVisible = isInfoPopupVisible();
-    } else if (window.isInfoPopupVisible !== undefined) {
-        isVisible = window.isInfoPopupVisible;
-    }
+    isVisible = AppState.ui.isInfoPopupVisible;
     
     if (isVisible) {
         // 팝업이 있으면 닫기 + 포커스 유지
-        if (typeof hideInfoPopup === 'function') {
-            hideInfoPopup();
-        }
+        AppMediator.publish('infopopup:hide');
         // 포커스는 즐겨찾기에 계속 유지
         AppState.ui.watchScreenFocusIndex = 0;
         forceFavoriteButtonFocus();
@@ -305,17 +289,10 @@ function handleWatchScreenBack() {
     }
     
     // 2순위: 방송정보 팝업이 표시되어 있으면 팝업 닫기
-    var isPopupVisible = false;
-    if (typeof isInfoPopupVisible === 'function') {
-        isPopupVisible = isInfoPopupVisible();
-    } else if (window.isInfoPopupVisible !== undefined) {
-        isPopupVisible = window.isInfoPopupVisible;
-    }
+    var isPopupVisible = AppState.ui.isInfoPopupVisible;
     
     if (isPopupVisible) {
-        if (typeof hideInfoPopup === 'function') {
-            hideInfoPopup();
-        }
+        AppMediator.publish('infopopup:hide');
         AppState.ui.watchScreenFocusIndex = -1;
         clearAllWatchFocus();
         console.log('뒤로가기: 방송정보 팝업 닫기');

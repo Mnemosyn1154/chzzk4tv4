@@ -192,18 +192,6 @@ function initializeSearch() {
         });
     }
     
-    // AppMediator 이벤트 구독
-    if (window.AppMediator) {
-        // 라이브 목록 표시 이벤트
-        AppMediator.subscribe('search:showLiveList', function() {
-            showLiveList();
-        });
-        
-        // 라이브 목록 새로고침 이벤트
-        AppMediator.subscribe('search:refreshLiveList', function() {
-            refreshLiveList();
-        });
-    }
 }
 
 /**

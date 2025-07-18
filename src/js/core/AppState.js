@@ -76,15 +76,6 @@ function initializeAppState() {
     AppState.ui.previousView = 'live';
     AppState.ui.isChatPanelVisible = false;
     
-    // 채팅창 표시 상태 변경 이벤트 구독
-    if (window.AppMediator) {
-        AppMediator.subscribe('chat:visibilityChanged', function(data) {
-            if (data && typeof data.isVisible !== 'undefined') {
-                AppState.ui.isChatPanelVisible = data.isVisible;
-                console.log('AppState: 채팅창 표시 상태 업데이트:', data.isVisible);
-            }
-        });
-    }
     
     console.log('AppState initialized');
 }

@@ -21,13 +21,16 @@ var App = {
         // 2. AppState 초기화
         this.initializeAppState();
         
-        // 3. 코어 매니저들 초기화 (시청 화면 관련)
+        // 3. 모든 이벤트 바인딩 설정
+        this.bindEvents();
+        
+        // 4. 코어 매니저들 초기화 (시청 화면 관련)
         this.initializeCoreManagers();
         
-        // 4. UI 모듈들 초기화
+        // 5. UI 모듈들 초기화
         this.initializeUIModules();
         
-        // 5. 초기 화면 표시
+        // 6. 초기 화면 표시
         this.showInitialView();
         
         console.log("======================================");
@@ -173,6 +176,152 @@ var App = {
     },
     
     /**
+     * 모든 이벤트 바인딩을 중앙에서 관리
+     */
+    bindEvents: function() {
+        console.log("Binding all event handlers...");
+        
+        // Navigation 이벤트
+        AppMediator.subscribe('navigation:initializeFocus', function() {
+            if (window.Navigation && window.Navigation.initializeFocus) {
+                window.Navigation.initializeFocus();
+            }
+        });
+        
+        AppMediator.subscribe('navigation:setFocus', function(data) {
+            if (window.Navigation && window.Navigation.setFocus && data && typeof data.index === 'number') {
+                window.Navigation.setFocus(data.index);
+            }
+        });
+        
+        AppMediator.subscribe('navigation:selectCard', function(data) {
+            if (window.Navigation && window.Navigation.selectCard && data && data.card) {
+                window.Navigation.selectCard(data.card);
+            }
+        });
+        
+        // SearchManager 이벤트
+        AppMediator.subscribe('search:showLiveList', function() {
+            if (window.SearchManager && window.SearchManager.showLiveList) {
+                window.SearchManager.showLiveList();
+            }
+        });
+        
+        AppMediator.subscribe('search:refreshLiveList', function() {
+            if (window.SearchManager && window.SearchManager.refreshLiveList) {
+                window.SearchManager.refreshLiveList();
+            }
+        });
+        
+        // ChatManager 이벤트
+        AppMediator.subscribe('chat:initializeWatch', function() {
+            if (window.ChatManager && window.ChatManager.initializeWatchChat) {
+                window.ChatManager.initializeWatchChat();
+            }
+        });
+        
+        AppMediator.subscribe('chat:startWatch', function(chatDetails) {
+            if (window.ChatManager && window.ChatManager.startWatchChat) {
+                window.ChatManager.startWatchChat(chatDetails);
+            }
+        });
+        
+        AppMediator.subscribe('chat:disconnect', function() {
+            if (window.ChatManager && window.ChatManager.disconnectChat) {
+                window.ChatManager.disconnectChat();
+            }
+        });
+        
+        AppMediator.subscribe('chat:hidePanel', function() {
+            if (window.ChatManager && window.ChatManager.hideChatPanel) {
+                window.ChatManager.hideChatPanel();
+            }
+        });
+        
+        AppMediator.subscribe('chat:showPanel', function() {
+            if (window.ChatManager && window.ChatManager.showChatPanel) {
+                window.ChatManager.showChatPanel();
+            }
+        });
+        
+        AppMediator.subscribe('chat:togglePanel', function() {
+            if (window.ChatManager && window.ChatManager.toggleChatPanel) {
+                window.ChatManager.toggleChatPanel();
+            }
+        });
+        
+        AppMediator.subscribe('chat:setArrowFocus', function(data) {
+            if (window.ChatManager && window.ChatManager.setArrowFocus && data && typeof data.focused !== 'undefined') {
+                window.ChatManager.setArrowFocus(data.focused);
+            }
+        });
+        
+        AppMediator.subscribe('chat:hideToggleArrow', function() {
+            if (window.ChatManager && window.ChatManager.hideChatToggleArrow) {
+                window.ChatManager.hideChatToggleArrow();
+            }
+        });
+        
+        // AppState 이벤트
+        AppMediator.subscribe('chat:visibilityChanged', function(data) {
+            if (data && typeof data.isVisible !== 'undefined') {
+                AppState.ui.isChatPanelVisible = data.isVisible;
+                console.log('AppState: 채팅창 표시 상태 업데이트:', data.isVisible);
+            }
+        });
+        
+        // PlayerStatusManager 이벤트
+        AppMediator.subscribe('player:statusChange', function(data) {
+            if (!window.PlayerStatusManager || !data) return;
+            
+            if (data.hide) {
+                window.PlayerStatusManager.hide();
+            } else if (data.isError) {
+                window.PlayerStatusManager.showError(data.message || '알 수 없는 오류');
+            } else if (data.isLoading) {
+                window.PlayerStatusManager.showLoading(
+                    data.showSpinner !== false,
+                    data.message || '로딩 중...'
+                );
+            }
+        });
+        
+        // InfoPopupManager 이벤트
+        AppMediator.subscribe('infopopup:show', function() {
+            if (window.InfoPopupManager && window.InfoPopupManager.showInfoPopup) {
+                window.InfoPopupManager.showInfoPopup();
+            }
+        });
+        
+        AppMediator.subscribe('infopopup:hide', function() {
+            if (window.InfoPopupManager && window.InfoPopupManager.hideInfoPopup) {
+                window.InfoPopupManager.hideInfoPopup();
+            }
+        });
+        
+        // WatchUIManager 이벤트
+        AppMediator.subscribe('watchui:show', function() {
+            if (window.WatchUIManager && window.WatchUIManager.showWatchScreen) {
+                window.WatchUIManager.showWatchScreen();
+            }
+        });
+        
+        AppMediator.subscribe('watchui:populate', function(broadcastData) {
+            if (window.WatchUIManager && window.WatchUIManager.populateWatchInfo) {
+                window.WatchUIManager.populateWatchInfo(broadcastData);
+            }
+        });
+        
+        AppMediator.subscribe('watchui:hide', function() {
+            if (window.WatchUIManager && window.WatchUIManager.hideWatchScreen) {
+                window.WatchUIManager.hideWatchScreen();
+            }
+        });
+        
+        console.log("✓ All events bound successfully");
+    },
+    
+    /**
      * 애플리케이션 종료 처리
      */
     cleanup: function() {
@@ -200,41 +349,3 @@ var App = {
 
 // 전역으로 노출
 window.App = App;
-
-// 기존 호환성을 위한 전역 함수 매핑
-window.initializeApp = function() {
-    App.initialize();
-};
-
-// 전역 변수 (레거시 호환성)
-window.currentSelectedLiveData = null;
-
-// 기존 호환성을 위한 전역 함수 매핑
-window.fetchLives = function() {
-    return window.ChzzkAPI ? window.ChzzkAPI.fetchLives.apply(window.ChzzkAPI, arguments) : null;
-};
-
-window.fetchSearchResults = function() {
-    return window.ChzzkAPI ? window.ChzzkAPI.fetchSearchResults.apply(window.ChzzkAPI, arguments) : null;
-};
-
-window.fetchFullLiveDetails = function() {
-    return window.ChzzkAPI ? window.ChzzkAPI.fetchFullLiveDetails.apply(window.ChzzkAPI, arguments) : null;
-};
-
-window.createLiveCard = function() {
-    return window.CardManager ? window.CardManager.createLiveCard.apply(window.CardManager, arguments) : null;
-};
-
-window.createSearchResultCard = function() {
-    return window.CardManager ? window.CardManager.createSearchResultCard.apply(window.CardManager, arguments) : null;
-};
-
-// 전역 함수들 (기존 호환성 유지)
-window.fetchAndDisplayLives = function() {
-    return window.SearchManager ? window.SearchManager.showLiveList.apply(window.SearchManager, arguments) : null;
-};
-
-window.fetchAndDisplaySearchResults = function() {
-    return window.SearchManager ? window.SearchManager.showSearchResults.apply(window.SearchManager, arguments) : null;
-};

@@ -37,52 +37,6 @@ function initializeChatManager() {
         hideChatPanel();
     });
     
-    // AppMediator 이벤트 구독
-    if (window.AppMediator) {
-        // 채팅 초기화 이벤트
-        AppMediator.subscribe('chat:initializeWatch', function() {
-            initializeWatchChat();
-        });
-        
-        // 채팅 시작 이벤트
-        AppMediator.subscribe('chat:startWatch', function(chatDetails) {
-            startWatchChat(chatDetails);
-        });
-        
-        // 채팅 연결 해제 이벤트
-        AppMediator.subscribe('chat:disconnect', function() {
-            disconnectChat();
-        });
-        
-        // 채팅창 숨기기 이벤트
-        AppMediator.subscribe('chat:hidePanel', function() {
-            hideChatPanel();
-        });
-        
-        // 채팅창 표시 이벤트
-        AppMediator.subscribe('chat:showPanel', function() {
-            showChatPanel();
-        });
-        
-        // 채팅창 토글 이벤트
-        AppMediator.subscribe('chat:togglePanel', function() {
-            toggleChatPanel();
-        });
-        
-        // 화살표 포커스 설정 이벤트 (호환성 유지)
-        AppMediator.subscribe('chat:setArrowFocus', function(data) {
-            if (data && typeof data.focused !== 'undefined') {
-                setArrowFocus(data.focused);
-            }
-        });
-        
-        // 화살표 숨기기 이벤트 (호환성 유지)
-        AppMediator.subscribe('chat:hideToggleArrow', function() {
-            hideChatToggleArrow();
-        });
-        
-        console.log('채팅 매니저: AppMediator 이벤트 구독 완료');
-    }
     
     console.log('채팅 매니저 초기화 완료');
     return true;
@@ -458,15 +412,21 @@ function startWatchChat(liveDetails) {
 // 모듈 내보내기
 window.ChatManager = {
     initialize: initializeChatManager,
+    initializeWatchChat: initializeWatchChat,
+    startWatchChat: startWatchChat,
     showToggleArrow: showChatToggleArrow,
     hideToggleArrow: hideChatToggleArrow,
     setArrowFocus: setArrowFocus,
     showPanel: showChatPanel,
     hidePanel: hideChatPanel,
+    showChatPanel: showChatPanel,
+    hideChatPanel: hideChatPanel,
     togglePanel: toggleChatPanel,
+    toggleChatPanel: toggleChatPanel,
     addMessage: addChatMessage,
     connect: connectChat,
     disconnect: disconnectChat,
+    disconnectChat: disconnectChat,
     initializeWatch: initializeWatchChat,
     startWatch: startWatchChat,
     isVisible: function() { return isChatPanelVisible; }
