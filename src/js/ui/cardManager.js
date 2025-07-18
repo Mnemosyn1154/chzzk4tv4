@@ -85,7 +85,15 @@ function createLiveCard(stream, container) {
     
     // 라이브 상태 확인
     var isLive = false;
-    if (stream.livePlaybackJson) {
+    
+    // 라이브 채널은 liveTitle과 concurrentUserCount를 가짐
+    if (stream.liveTitle && stream.concurrentUserCount !== undefined && stream.concurrentUserCount !== null) {
+        isLive = true;
+        card.classList.add('live-now');
+    }
+    
+    // livePlaybackJson이 있는 경우 추가 확인
+    if (!isLive && stream.livePlaybackJson) {
         try {
             var livePlayback = JSON.parse(stream.livePlaybackJson);
             if (livePlayback && livePlayback.status === "STARTED") {
