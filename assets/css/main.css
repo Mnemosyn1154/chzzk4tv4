@@ -179,8 +179,8 @@ h2 {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background-color: #ff0000;
-    color: white;
+    background-color: var(--highlight-green); /* 치지직 CI 녹색 사용 */
+    color: var(--dark-bg); /* 어두운 배경색으로 텍스트 */
     padding: 0.3rem 0.8rem;
     border-radius: 0.4rem;
     font-size: 1.2rem;
