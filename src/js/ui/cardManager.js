@@ -75,107 +75,103 @@ function updateStarAppearance(star, isFavorite) {
 }
 
 /**
- * 라이브 방송 카드 생성
- * @param {Object} stream - 방송 데이터
+ * 통합 카드 생성 함수
+ * @param {Object} data - 카드 데이터
+ * @param {string} data.type - 카드 타입 ('live' 또는 'search')
+ * @param {string} data.line1 - 첫 번째 줄 텍스트
+ * @param {string} data.line2 - 두 번째 줄 텍스트
+ * @param {string} data.line3 - 세 번째 줄 텍스트
+ * @param {string} data.thumbnailUrl - 썸네일 URL
+ * @param {boolean} data.isLive - 라이브 상태
+ * @param {Object} data.originalData - 원본 데이터 (클릭 이벤트용)
  * @param {HTMLElement} container - 카드를 추가할 컨테이너
  */
-function createLiveCard(stream, container) {
+function createUnifiedCard(data, container) {
     var card = document.createElement('div');
-    card.className = 'live-card';
+    card.className = 'chzzk-card';
     
-    // 라이브 상태 확인
-    var isLive = false;
-    
-    // 라이브 채널은 liveTitle과 concurrentUserCount를 가짐
-    if (stream.liveTitle && stream.concurrentUserCount !== undefined && stream.concurrentUserCount !== null) {
-        isLive = true;
+    if (data.isLive) {
         card.classList.add('live-now');
     }
     
-    // livePlaybackJson이 있는 경우 추가 확인
-    if (!isLive && stream.livePlaybackJson) {
-        try {
-            var livePlayback = JSON.parse(stream.livePlaybackJson);
-            if (livePlayback && livePlayback.status === "STARTED") {
-                 card.classList.add('live-now');
-                 isLive = true;
-            }
-        } catch (e) {
-            console.warn("Error parsing livePlaybackJson for stream: ", stream.liveTitle, e);
-        }
-    }
-
-    // 썸네일 처리
-    var thumbnailUrl = null;
-    if (stream.liveImageUrl) {
-        thumbnailUrl = stream.liveImageUrl.replace('{type}', '480');
-    }
-    if (!thumbnailUrl && stream.channel && stream.channel.channelImageUrl) {
-        thumbnailUrl = stream.channel.channelImageUrl;
-    }
-
     // 썸네일 컨테이너 생성
     var thumbnailContainer = document.createElement('div');
-    thumbnailContainer.className = 'live-card-thumbnail-container';
+    thumbnailContainer.className = 'chzzk-card-thumbnail-container';
     
     var imageElement = document.createElement('img');
-    imageElement.className = 'live-card-thumbnail';
-    imageElement.alt = stream.liveTitle;
+    imageElement.className = 'chzzk-card-thumbnail';
+    imageElement.alt = data.line1 + ' 썸네일';
     imageElement.onerror = function() {
-        var placeholder = Utils.createPlaceholderThumbnail("이미지 로드 실패");
-        this.parentNode.replaceChild(placeholder, this);
+        var placeholder = Utils.createPlaceholderThumbnail('이미지 로드 실패');
+        if (this.parentNode) {
+            this.parentNode.replaceChild(placeholder, this);
+        }
     };
-    imageElement.src = thumbnailUrl || '';
-
-    if (!thumbnailUrl) {
-        var placeholder = Utils.createPlaceholderThumbnail("No Image");
-        thumbnailContainer.appendChild(placeholder);
-    } else {
+    
+    if (data.thumbnailUrl) {
+        imageElement.src = data.thumbnailUrl;
         thumbnailContainer.appendChild(imageElement);
+    } else {
+        var placeholder = Utils.createPlaceholderThumbnail('No Image');
+        thumbnailContainer.appendChild(placeholder);
     }
     
-    // 라이브 배지 오버레이 추가
-    if (isLive) {
-        var liveBadge = document.createElement('span');
-        liveBadge.className = 'live-badge-overlay';
+    // 라이브 배지 오버레이
+    if (data.isLive) {
+        var liveBadge = document.createElement('div');
+        liveBadge.className = 'live-badge';
         liveBadge.textContent = 'LIVE';
         thumbnailContainer.appendChild(liveBadge);
     }
     
     card.appendChild(thumbnailContainer);
-
-    // 카드 정보 생성
+    
+    // 카드 정보 영역
     var info = document.createElement('div');
-    info.className = 'live-card-info';
-
-    var title = document.createElement('h3');
-    title.className = 'live-card-title';
-    title.textContent = Utils.escapeHTML(stream.liveTitle);
-
-    var channelName = document.createElement('p');
-    channelName.className = 'live-card-channel';
-    channelName.textContent = stream.channel.channelName;
-
-    var viewers = document.createElement('p');
-    viewers.className = 'live-card-viewers';
-    viewers.textContent = '시청자 ' + stream.concurrentUserCount.toLocaleString() + '명';
-
-    info.appendChild(title);
-    info.appendChild(channelName);
-    info.appendChild(viewers);
-
-    // 라이브 배지는 이제 썸네일 오버레이로 표시되므로 여기서는 제거
-
-    // 즐겨찾기 별표를 info 영역에 추가
-    var favoriteStarElement = createFavoriteStar(stream);
+    info.className = 'chzzk-card-info';
+    
+    // Line 1 (제목/채널명)
+    var line1 = document.createElement('div');
+    line1.className = 'chzzk-card-line1';
+    line1.textContent = Utils.escapeHTML(data.line1);
+    info.appendChild(line1);
+    
+    // Line 2 (채널명/팔로워)
+    var line2 = document.createElement('div');
+    line2.className = 'chzzk-card-line2';
+    line2.textContent = data.line2;
+    info.appendChild(line2);
+    
+    // Line 3 (시청자/설명)
+    if (data.line3) {
+        var line3 = document.createElement('div');
+        line3.className = 'chzzk-card-line3';
+        line3.textContent = data.line3;
+        info.appendChild(line3);
+    }
+    
+    // 즐겨찾기 별표
+    var favoriteStarElement = createFavoriteStar(data.originalData);
     info.appendChild(favoriteStarElement);
-
+    
     card.appendChild(info);
     
+    // 카드 속성 및 이벤트
     card.setAttribute('tabindex', '-1');
-    card.chzzkData = stream; // 카드 요소에 stream 데이터 직접 저장
+    card.chzzkData = data.originalData;
     
-    // 클릭/터치 이벤트 추가
+    // 채널 ID 저장
+    var channelId = null;
+    if (data.originalData.channel && data.originalData.channel.channelId) {
+        channelId = data.originalData.channel.channelId;
+    } else if (data.originalData.channelId) {
+        channelId = data.originalData.channelId;
+    }
+    if (channelId) {
+        card.setAttribute('data-channel-id', channelId);
+    }
+    
+    // 클릭/터치 이벤트
     card.addEventListener('click', function() {
         if (window.AppMediator) {
             AppMediator.publish('navigation:selectCard', { card: card });
@@ -183,6 +179,56 @@ function createLiveCard(stream, container) {
     });
     
     container.appendChild(card);
+}
+
+/**
+ * 라이브 방송 카드 생성
+ * @param {Object} stream - 방송 데이터
+ * @param {HTMLElement} container - 카드를 추가할 컨테이너
+ */
+function createLiveCard(stream, container) {
+    // 라이브 상태 확인
+    var isLive = false;
+    
+    // 라이브 채널은 liveTitle과 concurrentUserCount를 가짐
+    if (stream.liveTitle && stream.concurrentUserCount !== undefined && stream.concurrentUserCount !== null) {
+        isLive = true;
+    }
+    
+    // livePlaybackJson이 있는 경우 추가 확인
+    if (!isLive && stream.livePlaybackJson) {
+        try {
+            var livePlayback = JSON.parse(stream.livePlaybackJson);
+            if (livePlayback && livePlayback.status === "STARTED") {
+                isLive = true;
+            }
+        } catch (e) {
+            console.warn("Error parsing livePlaybackJson for stream: ", stream.liveTitle, e);
+        }
+    }
+
+    // 썸네일 처리 - 라이브인 경우 방송 화면 썸네일 우선 사용
+    var thumbnailUrl = null;
+    if (stream.liveImageUrl) {
+        // 라이브 방송 화면 썸네일 (고화질로 변경)
+        thumbnailUrl = stream.liveImageUrl.replace('{type}', '720');
+    }
+    if (!thumbnailUrl && stream.channel && stream.channel.channelImageUrl) {
+        thumbnailUrl = stream.channel.channelImageUrl;
+    }
+
+    // 통합 카드 데이터 준비
+    var cardData = {
+        type: 'live',
+        line1: stream.liveTitle,
+        line2: stream.channel.channelName,
+        line3: '시청자 ' + stream.concurrentUserCount.toLocaleString() + '명',
+        thumbnailUrl: thumbnailUrl,
+        isLive: isLive,
+        originalData: stream
+    };
+    
+    createUnifiedCard(cardData, container);
 }
 
 /**
@@ -194,104 +240,43 @@ function createSearchResultCard(item, container) {
     var channel = item.channel;
     if (!channel) return;
 
-    var card = document.createElement('div');
-    card.className = 'live-card search-result-card';
-    var isLive = false;
-    if (channel.openLive) {
-        card.classList.add('live-now');
-        isLive = true;
-    }
-
-    // 썸네일 컨테이너 생성
-    var thumbnailContainer = document.createElement('div');
-    thumbnailContainer.className = 'live-card-thumbnail-container';
+    var isLive = channel.openLive ? true : false;
     
-    // 썸네일 처리
-    var imageElement = document.createElement('img');
-    imageElement.className = 'live-card-thumbnail';
-    imageElement.alt = channel.channelName + ' 썸네일';
-    imageElement.onerror = function() {
-        var placeholder = Utils.createPlaceholderThumbnail("이미지 로드 실패");
-        if (this.parentNode) {
-            this.parentNode.replaceChild(placeholder, this);
-        }
-    };
-    imageElement.src = channel.channelImageUrl || '';
-
-    if (!channel.channelImageUrl) {
-        var placeholder = Utils.createPlaceholderThumbnail("No Image");
-        thumbnailContainer.appendChild(placeholder);
-    } else {
-        thumbnailContainer.appendChild(imageElement);
-    }
+    // 썸네일 URL 결정
+    var thumbnailUrl = channel.channelImageUrl || null;
     
-    // 라이브 배지 오버레이 추가
-    if (isLive) {
-        var liveBadge = document.createElement('span');
-        liveBadge.className = 'live-badge-overlay';
-        liveBadge.textContent = 'LIVE';
-        thumbnailContainer.appendChild(liveBadge);
-    }
+    // 라이브인 경우 실제 방송 썸네일을 가져올 수 있는지 확인
+    // 검색 결과에는 liveImageUrl이 없으므로 채널 이미지 사용
     
-    card.appendChild(thumbnailContainer);
-
-    // 카드 정보 생성
-    var info = document.createElement('div');
-    info.className = 'live-card-info';
-
-    var title = document.createElement('h3');
-    title.className = 'live-card-title';
-    title.textContent = channel.channelName;
-    
-    if (channel.verifiedMark) {
-        var verifiedBadge = document.createElement('span');
-        verifiedBadge.className = 'verified-badge';
-        verifiedBadge.textContent = ' ✔️';
-        title.appendChild(verifiedBadge);
-    }
-
-    var followers = document.createElement('p');
-    followers.className = 'live-card-channel';
-    var followerCountText = channel.followerCount ? channel.followerCount.toLocaleString() : '정보 없음';
-    followers.textContent = '팔로워: ' + followerCountText;
-
-    info.appendChild(title);
-    info.appendChild(followers);
-
-    // 라이브/오프라인 표시는 이제 썸네일 오버레이로 표시
-    // 오프라인 상태는 표시하지 않음
-    
-    // 채널 설명
+    // 채널 설명 처리 (최대 2줄)
+    var descriptionText = '';
     if (channel.channelDescription) {
-        var description = document.createElement('p');
-        description.className = 'channel-description';
-        description.textContent = Utils.escapeHTML(channel.channelDescription);
-        info.appendChild(description);
-    }
-
-    // 즐겨찾기 별표를 info 영역에 추가
-    var favoriteStarElement = createFavoriteStar(item);
-    info.appendChild(favoriteStarElement);
-
-    card.appendChild(info);
-    
-    card.setAttribute('tabindex', '-1');
-    card.chzzkData = item;
-    
-    // 클릭/터치 이벤트 추가
-    card.addEventListener('click', function() {
-        if (window.AppMediator) {
-            AppMediator.publish('navigation:selectCard', { card: card });
+        descriptionText = Utils.escapeHTML(channel.channelDescription);
+        // 길이 제한 (약 50자)
+        if (descriptionText.length > 50) {
+            descriptionText = descriptionText.substring(0, 50) + '...';
         }
-    });
+    }
     
-    container.appendChild(card);
+    // 통합 카드 데이터 준비
+    var cardData = {
+        type: 'search',
+        line1: channel.channelName + (channel.verifiedMark ? ' ✔️' : ''),
+        line2: '팔로워: ' + (channel.followerCount ? channel.followerCount.toLocaleString() : '정보 없음'),
+        line3: descriptionText,
+        thumbnailUrl: thumbnailUrl,
+        isLive: isLive,
+        originalData: item
+    };
+    
+    createUnifiedCard(cardData, container);
 }
 
 // 모듈 내보내기
 window.CardManager = {
     createLiveCard: createLiveCard,
     createSearchResultCard: createSearchResultCard,
+    createUnifiedCard: createUnifiedCard,
     createFavoriteStar: createFavoriteStar,
     updateStarAppearance: updateStarAppearance
-}; 
+};
