@@ -5,6 +5,10 @@ var StreamManager = (function() {
     var hlsInstance = null;
     var liveSyncInterval = null;
     var playbackRateInterval = null;
+    var bufferHealthInterval = null;
+    var networkQuality = 'good'; // 'good', 'medium', 'poor'
+    var bufferStallCount = 0;
+    var lastStallTime = 0;
     
     function initialize() {
         chzzkPlayerElement = document.getElementById('chzzk-player');
@@ -160,46 +164,63 @@ var StreamManager = (function() {
             hlsInstance.destroy(); 
         }
         
-        // 최적화된 고정 HLS 설정 - 안정성과 지연 시간의 균형
+        // WebOS TV 감지 및 전용 설정
+        var isWebOS = window.isWebOSTV;
+        
+        // 버퍼링 문제 해결을 위한 개선된 HLS 설정
         var hlsConfig = {
-            // 버퍼 설정 - 안정성을 위해 더 크게 설정
-            maxBufferLength: 8,              // 기본 버퍼 길이 (8초)
-            maxMaxBufferLength: 20,          // 최대 버퍼 길이 (20초)
-            maxBufferSize: 35 * 1000 * 1000, // 최대 버퍼 크기 (35MB)
-            maxBufferHole: 0.5,              // 버퍼 홀 허용치
+            // 버퍼 설정 - 안정성 강화
+            maxBufferLength: 10,              // 기본 버퍼 길이 증가 (10초)
+            maxMaxBufferLength: 30,           // 최대 버퍼 길이 증가 (30초)
+            maxBufferSize: 60 * 1000 * 1000, // 최대 버퍼 크기 증가 (60MB)
+            maxBufferHole: 1.0,              // 버퍼 홀 허용치 증가 (1초)
+            
+            // 버퍼 안정성 개선 설정
+            maxFragLookUpTolerance: 0.25,    // 프래그먼트 검색 허용 오차
+            nudgeOffset: 0.1,                // 버퍼 조정 오프셋
+            nudgeMaxRetry: 5,                // 버퍼 조정 최대 재시도
+            maxLoadingDelay: 4,              // 최대 로딩 지연
+            highBufferWatchdogPeriod: 3,     // 버퍼 감시 주기
             
             // 라이브 스트리밍 설정
-            lowLatencyMode: true,            // 저지연 모드 활성화
-            backBufferLength: 15,            // 이전 버퍼 보존 (15초)
-            liveSyncDurationCount: 2,        // 라이브 동기화 세그먼트 수
-            liveMaxLatencyDurationCount: 6,  // 최대 허용 지연
-            targetLatency: 8,                // 목표 지연 시간 (8초)
+            lowLatencyMode: !isWebOS,        // WebOS TV에서는 저지연 모드 비활성화
+            backBufferLength: isWebOS ? 5 : 10, // WebOS에서는 메모리 절약
+            liveSyncDurationCount: 3,        // 라이브 동기화 세그먼트 수 증가
+            liveMaxLatencyDurationCount: 10, // 최대 허용 지연 증가
+            targetLatency: 12,               // 목표 지연 시간 증가 (12초)
+            liveBackBufferLength: 0,         // 라이브 백버퍼 비활성화
             
             // 성능 및 네트워크 설정
             startPosition: -1,               // 라이브 엣지에서 시작
             liveDurationInfinity: true,      // 무한 라이브 스트림
             autoStartLoad: true,             // 자동 로드 시작
-            enableWorker: true,              // 워커 사용 (성능 향상)
-            progressive: true,               // 프로그레시브 로딩
+            enableWorker: !isWebOS,          // WebOS TV에서는 워커 비활성화
+            progressive: !isWebOS,           // WebOS TV에서는 프로그레시브 로딩 비활성화
             testBandwidth: true,             // 대역폭 테스트
             enableSoftwareAES: true,         // 소프트웨어 AES
             
             // 타임아웃 설정 - 네트워크 불안정성 고려
-            fragLoadingTimeOut: 20000,       // 프래그먼트 로드 타임아웃 (20초)
-            manifestLoadingTimeOut: 10000,   // 매니페스트 로드 타임아웃 (10초)
-            levelLoadingTimeOut: 10000,      // 레벨 로드 타임아웃 (10초)
+            fragLoadingTimeOut: 30000,       // 프래그먼트 로드 타임아웃 증가 (30초)
+            manifestLoadingTimeOut: 15000,   // 매니페스트 로드 타임아웃 증가 (15초)
+            levelLoadingTimeOut: 15000,      // 레벨 로드 타임아웃 증가 (15초)
+            fragLoadingMaxRetry: 6,          // 프래그먼트 로드 최대 재시도
+            manifestLoadingMaxRetry: 4,      // 매니페스트 로드 최대 재시도
+            levelLoadingMaxRetry: 4,         // 레벨 로드 최대 재시도
             
-            // ABR 설정 - 자동 화질 조절
-            abrEwmaFastLive: 3.0,           // 빠른 EWMA 가중치
-            abrEwmaSlowLive: 9.0,           // 느린 EWMA 가중치
-            abrBandWidthFactor: 0.9,        // 대역폭 사용 비율
-            abrBandWidthUpFactor: 0.7,      // 대역폭 상향 조정 비율
+            // ABR 설정 - 자동 화질 조절 개선
+            abrEwmaFastLive: 4.0,           // 빠른 EWMA 가중치 조정
+            abrEwmaSlowLive: 12.0,          // 느린 EWMA 가중치 조정
+            abrBandWidthFactor: 0.85,       // 대역폭 사용 비율 감소
+            abrBandWidthUpFactor: 0.6,      // 대역폭 상향 조정 비율 감소
+            abrMaxWithRealBitrate: true,    // 실제 비트레이트 기반 ABR
             
             debug: false
         };
         
-        console.log('[StreamManager] Optimized HLS configuration applied');
-        console.log('[StreamManager] Target latency: 8 seconds, Buffer: 8-20 seconds');
+        console.log('[StreamManager] Enhanced HLS configuration applied');
+        console.log('[StreamManager] WebOS TV:', isWebOS);
+        console.log('[StreamManager] Target latency: 12 seconds, Buffer: 10-30 seconds');
+        console.log('[StreamManager] Buffer hole tolerance: 1.0 seconds');
         
         hlsInstance = new Hls(hlsConfig);
         
@@ -207,6 +228,9 @@ var StreamManager = (function() {
         hlsInstance.attachMedia(chzzkPlayerElement);
         
         setupHlsEventListeners();
+        
+        // 버퍼 건강 모니터링 시작
+        startBufferHealthMonitoring();
     }
     
     function setupHlsEventListeners() {
@@ -283,18 +307,8 @@ var StreamManager = (function() {
                         break;
                 }
             } else {
-                if (data.details !== 'bufferStalledError' && 
-                    data.details !== 'bufferNudgeOnStall' && 
-                    data.details !== 'bufferSeekOverHole') {
-                    console.warn('HLS.js: 복구 가능한 오류:', data.details);
-                }
-                
-                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                    AppMediator.publish('player:statusChange', { isLoading: true, message: '네트워크 재연결 중...' });
-                    setTimeout(function() {
-                        AppMediator.publish('player:statusChange', { isLoading: false });
-                    }, 2000);
-                }
+                // 비치명적 오류에 대한 향상된 처리
+                handleNonFatalError(data);
             }
         });
         
@@ -303,6 +317,160 @@ var StreamManager = (function() {
         
         // 플레이백 속도 조절 시작
         startPlaybackRateAdjustment();
+    }
+    
+    /**
+     * 비치명적 오류 처리
+     */
+    function handleNonFatalError(data) {
+        switch (data.details) {
+            case 'bufferStalledError':
+                console.log('[ErrorHandler] Buffer stalled, attempting recovery...');
+                bufferStallCount++;
+                
+                // 버퍼 스톨 회수가 많으면 품질 낮추기
+                if (bufferStallCount > 2 && hlsInstance) {
+                    if (hlsInstance.autoLevelEnabled) {
+                        // 자동 품질 조절이 켜져 있다면 최대 품질 제한
+                        var currentMaxLevel = hlsInstance.autoLevelCapping;
+                        if (currentMaxLevel > 0) {
+                            hlsInstance.autoLevelCapping = currentMaxLevel - 1;
+                            console.log('[ErrorHandler] Lowered max quality level to:', hlsInstance.autoLevelCapping);
+                        }
+                    }
+                }
+                
+                // 진행 표시기 업데이트
+                AppMediator.publish('player:statusChange', { 
+                    isLoading: true, 
+                    message: '버퍼링 중... (네트워크 상태 확인)' 
+                });
+                
+                // 2초 후 상태 확인
+                setTimeout(function() {
+                    if (chzzkPlayerElement && !chzzkPlayerElement.paused && 
+                        chzzkPlayerElement.readyState >= 3) {
+                        AppMediator.publish('player:statusChange', { isLoading: false });
+                    }
+                }, 2000);
+                break;
+                
+            case 'bufferSeekOverHole':
+                console.log('[ErrorHandler] Buffer hole detected, skipping...');
+                // 버퍼 홀은 HLS.js가 자동으로 처리하므로 로그만 출력
+                break;
+                
+            case 'bufferNudgeOnStall':
+                console.log('[ErrorHandler] Buffer nudge on stall');
+                break;
+                
+            case 'fragLoadError':
+            case 'fragLoadTimeOut':
+                console.log('[ErrorHandler] Fragment load issue:', data.details);
+                // 프래그먼트 로드 오류는 HLS.js가 자동 재시도
+                break;
+                
+            default:
+                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                    console.log('[ErrorHandler] Network error:', data.details);
+                    AppMediator.publish('player:statusChange', { 
+                        isLoading: true, 
+                        message: '네트워크 재연결 중...' 
+                    });
+                    
+                    // 네트워크 오류 후 자동 복구
+                    setTimeout(function() {
+                        AppMediator.publish('player:statusChange', { isLoading: false });
+                    }, 3000);
+                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    console.warn('[ErrorHandler] Media error:', data.details);
+                } else {
+                    console.warn('[ErrorHandler] Other error:', data.details);
+                }
+        }
+    }
+    
+    /**
+     * 버퍼 건강 모니터링 - 네트워크 상태에 따라 버퍼 동적 조정
+     */
+    function startBufferHealthMonitoring() {
+        if (bufferHealthInterval) {
+            clearInterval(bufferHealthInterval);
+        }
+        
+        bufferHealthInterval = setInterval(function() {
+            if (!hlsInstance || !hlsInstance.media) return;
+            
+            var media = hlsInstance.media;
+            var buffered = media.buffered;
+            
+            if (buffered.length > 0) {
+                var currentTime = media.currentTime;
+                var bufferEnd = buffered.end(buffered.length - 1);
+                var bufferLength = bufferEnd - currentTime;
+                
+                // 버퍼 상태에 따른 네트워크 품질 평가
+                var now = Date.now();
+                if (bufferLength < 2) {
+                    // 버퍼가 2초 미만이면 네트워크 품질 저하
+                    if (now - lastStallTime > 30000) { // 30초 이내 재발생
+                        bufferStallCount++;
+                        lastStallTime = now;
+                    }
+                    
+                    if (bufferStallCount >= 3) {
+                        networkQuality = 'poor';
+                        console.log('[BufferHealth] Network quality: POOR');
+                        adjustBufferForPoorNetwork();
+                    } else if (bufferStallCount >= 1) {
+                        networkQuality = 'medium';
+                        console.log('[BufferHealth] Network quality: MEDIUM');
+                    }
+                } else if (bufferLength > 10) {
+                    // 버퍼가 충분하면 카운트 리셋
+                    if (bufferStallCount > 0) {
+                        bufferStallCount--;
+                    }
+                    if (bufferLength > 15 && networkQuality !== 'good') {
+                        networkQuality = 'good';
+                        console.log('[BufferHealth] Network quality: GOOD');
+                    }
+                }
+                
+                // 디버그 로그
+                if (bufferLength < 5) {
+                    console.log('[BufferHealth] Low buffer:', bufferLength.toFixed(2) + 's');
+                }
+            }
+        }, 2000); // 2초마다 체크
+    }
+    
+    /**
+     * 네트워크 품질이 낮을 때 버퍼 설정 조정
+     */
+    function adjustBufferForPoorNetwork() {
+        if (!hlsInstance) return;
+        
+        console.log('[BufferHealth] Adjusting settings for poor network...');
+        
+        // 네트워크가 불안정할 때 더 큰 버퍼 확보
+        hlsInstance.config.maxBufferLength = 15;
+        hlsInstance.config.maxMaxBufferLength = 40;
+        hlsInstance.config.maxBufferHole = 2.0;
+        hlsInstance.config.nudgeMaxRetry = 10;
+        
+        // 화질을 낮춰서 안정성 확보
+        if (hlsInstance.currentLevel !== -1) {
+            var levels = hlsInstance.levels;
+            if (levels && levels.length > 1) {
+                // 현재 레벨보다 낮은 품질로 변경
+                var currentLevel = hlsInstance.currentLevel;
+                if (currentLevel > 0) {
+                    hlsInstance.currentLevel = Math.max(0, currentLevel - 1);
+                    console.log('[BufferHealth] Lowered quality level to:', hlsInstance.currentLevel);
+                }
+            }
+        }
     }
     
     /**
@@ -391,6 +559,11 @@ var StreamManager = (function() {
         clearTimeout(bufferingTimeout);
         clearInterval(liveSyncInterval);
         clearInterval(playbackRateInterval);
+        clearInterval(bufferHealthInterval);
+        
+        // 상태 초기화
+        bufferStallCount = 0;
+        networkQuality = 'good';
         
         if (hlsInstance) {
             hlsInstance.destroy();
