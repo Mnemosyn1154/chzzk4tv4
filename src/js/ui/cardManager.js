@@ -84,11 +84,13 @@ function createLiveCard(stream, container) {
     card.className = 'live-card';
     
     // 라이브 상태 확인
+    var isLive = false;
     if (stream.livePlaybackJson) {
         try {
             var livePlayback = JSON.parse(stream.livePlaybackJson);
             if (livePlayback && livePlayback.status === "STARTED") {
                  card.classList.add('live-now');
+                 isLive = true;
             }
         } catch (e) {
             console.warn("Error parsing livePlaybackJson for stream: ", stream.liveTitle, e);
@@ -104,6 +106,10 @@ function createLiveCard(stream, container) {
         thumbnailUrl = stream.channel.channelImageUrl;
     }
 
+    // 썸네일 컨테이너 생성
+    var thumbnailContainer = document.createElement('div');
+    thumbnailContainer.className = 'live-card-thumbnail-container';
+    
     var imageElement = document.createElement('img');
     imageElement.className = 'live-card-thumbnail';
     imageElement.alt = stream.liveTitle;
@@ -115,10 +121,20 @@ function createLiveCard(stream, container) {
 
     if (!thumbnailUrl) {
         var placeholder = Utils.createPlaceholderThumbnail("No Image");
-        card.appendChild(placeholder);
+        thumbnailContainer.appendChild(placeholder);
     } else {
-        card.appendChild(imageElement);
+        thumbnailContainer.appendChild(imageElement);
     }
+    
+    // 라이브 배지 오버레이 추가
+    if (isLive) {
+        var liveBadge = document.createElement('span');
+        liveBadge.className = 'live-badge-overlay';
+        liveBadge.textContent = 'LIVE';
+        thumbnailContainer.appendChild(liveBadge);
+    }
+    
+    card.appendChild(thumbnailContainer);
 
     // 카드 정보 생성
     var info = document.createElement('div');
@@ -140,13 +156,7 @@ function createLiveCard(stream, container) {
     info.appendChild(channelName);
     info.appendChild(viewers);
 
-    // 라이브 배지 추가
-    if (stream.livePlaybackJson) {
-        var liveBadge = document.createElement('span');
-        liveBadge.className = 'live-status-badge live';
-        liveBadge.textContent = 'LIVE';
-        info.appendChild(liveBadge);
-    }
+    // 라이브 배지는 이제 썸네일 오버레이로 표시되므로 여기서는 제거
 
     // 즐겨찾기 별표를 info 영역에 추가
     var favoriteStarElement = createFavoriteStar(stream);
@@ -178,10 +188,16 @@ function createSearchResultCard(item, container) {
 
     var card = document.createElement('div');
     card.className = 'live-card search-result-card';
+    var isLive = false;
     if (channel.openLive) {
         card.classList.add('live-now');
+        isLive = true;
     }
 
+    // 썸네일 컨테이너 생성
+    var thumbnailContainer = document.createElement('div');
+    thumbnailContainer.className = 'live-card-thumbnail-container';
+    
     // 썸네일 처리
     var imageElement = document.createElement('img');
     imageElement.className = 'live-card-thumbnail';
@@ -196,10 +212,20 @@ function createSearchResultCard(item, container) {
 
     if (!channel.channelImageUrl) {
         var placeholder = Utils.createPlaceholderThumbnail("No Image");
-        card.appendChild(placeholder);
+        thumbnailContainer.appendChild(placeholder);
     } else {
-        card.appendChild(imageElement);
+        thumbnailContainer.appendChild(imageElement);
     }
+    
+    // 라이브 배지 오버레이 추가
+    if (isLive) {
+        var liveBadge = document.createElement('span');
+        liveBadge.className = 'live-badge-overlay';
+        liveBadge.textContent = 'LIVE';
+        thumbnailContainer.appendChild(liveBadge);
+    }
+    
+    card.appendChild(thumbnailContainer);
 
     // 카드 정보 생성
     var info = document.createElement('div');
@@ -224,17 +250,8 @@ function createSearchResultCard(item, container) {
     info.appendChild(title);
     info.appendChild(followers);
 
-    if (channel.openLive) {
-        var liveBadgeHTML = document.createElement('span');
-        liveBadgeHTML.className = 'live-status-badge live';
-        liveBadgeHTML.textContent = 'LIVE';
-        info.appendChild(liveBadgeHTML);
-    } else {
-        var offlineBadge = document.createElement('span');
-        offlineBadge.className = 'live-status-badge offline';
-        offlineBadge.textContent = '오프라인';
-        info.appendChild(offlineBadge);
-    }
+    // 라이브/오프라인 표시는 이제 썸네일 오버레이로 표시
+    // 오프라인 상태는 표시하지 않음
     
     // 채널 설명
     if (channel.channelDescription) {
