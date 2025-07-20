@@ -58,7 +58,7 @@ function getColumnCount() {
     // TV 환경에서는 고정값 사용 (안정성)
     if (window.isWebOSTV) {
         console.log("[TV Debug] Using fixed column count for TV");
-        return isSearchView ? 6 : 4;
+        return 4; // 검색 결과와 라이브 모두 4열로 통일
     }
 
     if (activeContainer) {
@@ -76,11 +76,11 @@ function getColumnCount() {
                     if (cardWidth > 0) {
                         var calculatedCols = Math.floor(containerWidth / cardWidth);
                         console.log("[Debug] Flexbox column calculation:", calculatedCols);
-                        return calculatedCols || (isSearchView ? 6 : 4);
+                        return calculatedCols || 4;
                     }
                 }
                 // 폴백 값
-                return isSearchView ? 6 : 4;
+                return 4;
             }
             
             // Grid 레이아웃 파싱
@@ -98,7 +98,7 @@ function getColumnCount() {
     }
     
     // 기본값: 라이브는 4열, 검색은 6열
-    return isSearchView ? 6 : 4;
+    return 4;
 }
 
 /**

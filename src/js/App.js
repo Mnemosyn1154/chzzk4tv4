@@ -213,6 +213,12 @@ var App = {
             }
         });
         
+        AppMediator.subscribe('navigation:updateFocusableElements', function() {
+            if (window.Navigation && window.Navigation.updateFocusableElements) {
+                window.Navigation.updateFocusableElements();
+            }
+        });
+        
         // SearchManager 이벤트
         AppMediator.subscribe('search:showLiveList', function() {
             if (window.SearchManager && window.SearchManager.showLiveList) {

@@ -119,19 +119,21 @@ h2 {
     gap: 2rem;
 }
 
-#live-stream-list-container .live-card {
+#live-stream-list-container .live-card,
+#live-stream-list-container .chzzk-card {
     flex: 0 0 calc(25% - 1.5rem); /* 4열 레이아웃 */
     max-width: calc(25% - 1.5rem);
 }
 
-/* 검색 결과 - 6열 레이아웃 */  
+/* 검색 결과 - 4열 레이아웃 (라이브와 동일) */  
 #search-results-container {
     gap: 1.5rem;
 }
 
-#search-results-container .live-card {
-    flex: 0 0 calc(16.666% - 1.25rem); /* 6열 레이아웃 */
-    max-width: calc(16.666% - 1.25rem);
+#search-results-container .live-card,
+#search-results-container .chzzk-card {
+    flex: 0 0 calc(25% - 1.5rem); /* 4열 레이아웃 */
+    max-width: calc(25% - 1.5rem);
 }
 
 /* Grid를 지원하는 경우에만 Grid 사용 */
@@ -146,11 +148,13 @@ h2 {
     }
     
     #search-results-container {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
     
     #live-stream-list-container .live-card,
-    #search-results-container .live-card {
+    #live-stream-list-container .chzzk-card,
+    #search-results-container .live-card,
+    #search-results-container .chzzk-card {
         flex: none;
         max-width: none;
     }
@@ -424,7 +428,8 @@ h2 {
 }
 
 /* 포커스 스타일 */
-.live-card.focused {
+.live-card.focused,
+.chzzk-card.focused {
     border-width: 0.3rem !important;
     border-style: solid !important;
     border-color: #61FF7E !important; /* 녹색 테두리로 포커스 표시 */
@@ -432,6 +437,7 @@ h2 {
     outline: none !important; /* 브라우저 기본 아웃라인 완전 제거 */
     transform: scale(1.05);
     transition: transform 0.1s ease-in-out, border-color 0.1s ease-in-out;
+    box-shadow: 0 0 1.5rem rgba(97, 255, 126, 0.4) !important; /* 녹색 글로우 효과 추가 */
     z-index: 10; /* 다른 요소들 위에 표시 */
 }
 

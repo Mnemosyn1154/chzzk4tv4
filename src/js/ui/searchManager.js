@@ -136,11 +136,21 @@ function showSearchResults(keyword) {
                 CardManager.createSearchResultCard(searchData[i], searchResultsContainer);
             }
             
-            // 검색 결과가 로드된 후 첫 번째 카드로 포커스 이동
+            // 검색 결과가 로드된 후 포커스 시스템 업데이트
             if (window.Navigation) {
-                AppMediator.publish('navigation:initializeFocus');
-                // 첫 번째 검색 결과 카드로 포커스 설정 (인덱스 2: 검색창=0, 검색버튼=1, 첫번째카드=2)
-                AppMediator.publish('navigation:setFocus', { index: 2 });
+                // 짧은 지연 후 포커스 업데이트 (DOM 렌더링 완료 대기)
+                setTimeout(function() {
+                    console.log('[SearchManager] Updating focusable elements after search results loaded');
+                    AppMediator.publish('navigation:updateFocusableElements');
+                    
+                    // 검색 결과 첫 번째 카드로 포커스 이동
+                    var searchCards = searchResultsContainer.querySelectorAll('.chzzk-card, .live-card');
+                    if (searchCards.length > 0) {
+                        console.log('[SearchManager] Moving focus to first search result');
+                        // 검색창(0), 검색버튼(1) 다음인 첫 번째 카드(2)로 포커스
+                        Navigation.setFocus(2);
+                    }
+                }, 150); // 150ms로 약간 늘려서 DOM 렌더링 완료 확실히 대기
             }
         } else {
             searchResultsContainer.innerHTML = '<p>검색 결과가 없습니다.</p>';
