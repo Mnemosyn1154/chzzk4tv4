@@ -127,12 +127,12 @@ h2 {
 
 /* 검색 결과 - 4열 레이아웃 (라이브와 동일) */  
 #search-results-container {
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 #search-results-container .live-card,
 #search-results-container .chzzk-card {
-    flex: 0 0 calc(25% - 1.5rem); /* 4열 레이아웃 */
+    flex: 0 0 calc(25% - 1.5rem); /* 4열 레이아웃 - 라이브와 동일 */
     max-width: calc(25% - 1.5rem);
 }
 
