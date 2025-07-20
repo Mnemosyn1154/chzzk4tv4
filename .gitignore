@@ -71,4 +71,7 @@ public
 .DS_Store
 
 # Windows specific
-Thumbs.db *.ipk
+Thumbs.db
+
+# IPK files
+*.ipk
